@@ -260,7 +260,8 @@ function Annotations.buildThoughtPopupItems(range_review)
             content = tostring(review.content or ""),
             likes_count = tonumber(pr.likesCount) or 0,
             review_id = tostring(review.reviewId or review.review_id
-                or pr.reviewId or pr.review_id or ""),
+                or pr.reviewId or pr.review_id
+                or range_review.reviewId or range_review.review_id or ""),
         }
     end
     return items
