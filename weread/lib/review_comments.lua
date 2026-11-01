@@ -13,7 +13,6 @@ end
 local function safe_meta(value)
     local text = trim(value)
     text = text:gsub("[%c]", " ")
-    text = text:gsub("[%c]", " ")
     if #text > 256 then text = text:sub(1, 256) end
     return trim(text)
 end
@@ -40,7 +39,8 @@ local function comment_from(entry)
     local user = type(entry.user) == "table" and entry.user or {}
     local author_obj = type(entry.author) == "table" and entry.author or {}
     local author = safe_meta(user.name or user.nick or user.nickname
-        or author_obj.name or author_obj.nick or entry.author
+        or author_obj.name or author_obj.nick
+        or (type(entry.author) == "string" and entry.author)
         or entry.name or entry.nickName)
     local content = safe_content(entry.content or entry.text or entry.htmlContent)
     if content == "" then return nil end
