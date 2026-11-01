@@ -393,7 +393,11 @@ function M:_showThoughtComments(item)
             self:showInfo(_("This thought has no comments."))
             return
         end
-        local title = _("Comments") .. " (" .. tostring(result.total_count or #rows) .. ")"
+        local total = tonumber(result.total_count) or #rows
+        local title = _("Comments") .. " (" .. tostring(total) .. ")"
+        if total > #rows then
+            title = title .. " - showing " .. tostring(#rows)
+        end
         self:showList(title, rows, _("This thought has no comments."))
     end
 
