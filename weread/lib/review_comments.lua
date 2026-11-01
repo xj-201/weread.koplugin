@@ -12,17 +12,25 @@ end
 
 local function safe_meta(value)
     local text = trim(value)
-    text = text:gsub("[%z\\1-\\31]", " ")
-    text = text:gsub("%s+", " ")
+    text = text:gsub("[%c]", " ")
+    text = text:gsub("[%c]", " ")
     if #text > 256 then text = text:sub(1, 256) end
     return trim(text)
 end
 
 local function safe_content(value)
     local text = tostring(value or "")
-    text = text:gsub("[%z\\1-\\8\\11-\\12\\14-\\31]", "")
+    text = text:gsub("[%c]", " ")
     if #text > 8000 then
-        text = text:sub(1, 8000):gsub("[\\128-\\191]+$", "")
+        text = text:sub(1, 8000)
+        while #text > 0 do
+            local byte = text:byte(#text)
+            if byte >= 128 then
+                text = text:sub(1, -2)
+            else
+                break
+            end
+        end
     end
     return trim(text)
 end
