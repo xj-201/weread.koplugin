@@ -384,9 +384,7 @@ function M:_showThoughtComments(item)
         for _, comment in ipairs(result.items or {}) do
             local meta = tostring(comment.author or _("WeRead user"))
             local likes = tonumber(comment.likes_count) or 0
-            if likes > 0 then
-                meta = meta .. "  ·  " .. _("Likes") .. " " .. tostring(likes)
-            end
+            meta = meta .. "  ·  " .. _("Likes") .. " " .. tostring(likes)
             rows[#rows + 1] = {
                 text = meta .. "\n" .. tostring(comment.content or ""),
             }
