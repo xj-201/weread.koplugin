@@ -19,7 +19,10 @@ end
 
 local function safe_content(value)
     local text = tostring(value or "")
-    text = text:gsub("[%c]", " ")
+    text = text:gsub("[%c]", function(char)
+        if char == "\n" or char == "\r" or char == "\t" then return char end
+        return " "
+    end)
     if #text > 8000 then
         text = text:sub(1, 8000)
         while #text > 0 do
@@ -81,7 +84,8 @@ function M.normalize_response(data)
 
     local raw = comments_array(data)
     if not raw then
-        if type(data.review) == "table" then
+        local nested_review = type(data.data) == "table" and data.data.review or nil
+        if type(data.review) == "table" or type(nested_review) == "table" then
             raw = {}
         else
             return { ok = false, message = "无法识别微信读书的评论响应。" }
@@ -97,6 +101,11 @@ function M.normalize_response(data)
     local total = tonumber(data.commentsCount or data.total or data.totalCount)
     if not total and type(data.review) == "table" then
         total = tonumber(data.review.commentsCount)
+    end
+    if not total and type(data.data) == "table" then
+        total = tonumber(data.data.commentsCount)
+            or (type(data.data.review) == "table"
+                and tonumber(data.data.review.commentsCount))
     end
     return {
         ok = true,
