@@ -199,6 +199,17 @@ local function comment_error_kind(err)
 end
 
 function M:_viewPickThoughtComments(book_id, item, popup, request_token)
+    local lifecycle_generation = self._pickthought_lifecycle_generation or 0
+    local reader_session_generation = self._reader_session_gen or 0
+    local expected_book_id = tostring(book_id or "")
+    local function lifecycle_is_current()
+        return lifecycle_generation == (self._pickthought_lifecycle_generation or 0)
+            and reader_session_generation == (self._reader_session_gen or 0)
+            and expected_book_id ~= ""
+            and expected_book_id == tostring(self._current_weread_book_id or "")
+    end
+    if not lifecycle_is_current() then return nil end
+
     -- Invalidate any older count-prefetch result for this thought. The full
     -- comment request is now the newest source of truth for its count.
     if type(item) == "table" then
@@ -207,7 +218,7 @@ function M:_viewPickThoughtComments(book_id, item, popup, request_token)
     end
     local popup_generation = popup and popup._popup_generation
     local function request_is_current()
-        if not popup then return false end
+        if not popup or not lifecycle_is_current() then return false end
         return popup._popup_generation == popup_generation
             and popup._comment_request_token == request_token
     end
@@ -335,8 +346,12 @@ function M:_viewPickThoughtComments(book_id, item, popup, request_token)
     end
     local fork_ok, pid = pcall(FFIUtil.runInSubProcess, child, false, false)
     if not fork_ok or not pid then
+        if not lifecycle_is_current() then return nil end
         return load_comments()
     end
+    self._pickthought_comment_request_pids =
+        self._pickthought_comment_request_pids or {}
+    self._pickthought_comment_request_pids[pid] = result_path
 
     if popup and popup._showCommentNotice then
         popup:_showCommentNotice("正在加载评论…")
@@ -344,9 +359,26 @@ function M:_viewPickThoughtComments(book_id, item, popup, request_token)
     local deadline = os.time() + 180
     local function poll()
         pcall(function() FFIUtil.isSubProcessDone(pid) end)
+        if not lifecycle_is_current() then
+            if type(FFIUtil.terminateSubProcess) == "function" then
+                pcall(FFIUtil.terminateSubProcess, pid)
+            end
+            if U.file_exists("/proc/" .. tostring(pid)) then
+                UIManager:scheduleIn(0.5, poll)
+                return
+            end
+            os.remove(result_path)
+            if self._pickthought_comment_request_pids then
+                self._pickthought_comment_request_pids[pid] = nil
+            end
+            return
+        end
         if U.file_exists(result_path) then
             local raw = U.read_file(result_path, true)
             os.remove(result_path)
+            if self._pickthought_comment_request_pids then
+                self._pickthought_comment_request_pids[pid] = nil
+            end
             local ok_decode, result = pcall(Json.decode, raw or "")
             local shown = false
             pcall(function() shown = UIManager:isWidgetShown(popup) == true end)
@@ -357,6 +389,9 @@ function M:_viewPickThoughtComments(book_id, item, popup, request_token)
             return
         end
         if not U.file_exists("/proc/" .. tostring(pid)) then
+            if self._pickthought_comment_request_pids then
+                self._pickthought_comment_request_pids[pid] = nil
+            end
             if request_is_current() and popup._showCommentNotice then
                 popup:_showCommentNotice(ReviewComments.message_for("network"))
             end
@@ -369,6 +404,9 @@ function M:_viewPickThoughtComments(book_id, item, popup, request_token)
                 pcall(FFIUtil.terminateSubProcess, pid)
             end
             os.remove(result_path)
+            if self._pickthought_comment_request_pids then
+                self._pickthought_comment_request_pids[pid] = nil
+            end
             if request_is_current() and popup._showCommentNotice then
                 popup:_showCommentNotice(ReviewComments.message_for("network"))
             end
@@ -381,6 +419,16 @@ function M:_viewPickThoughtComments(book_id, item, popup, request_token)
 end
 
 function M:_prefetchPickThoughtCommentCounts(popup, book_id)
+    local lifecycle_generation = self._pickthought_lifecycle_generation or 0
+    local reader_session_generation = self._reader_session_gen or 0
+    local expected_book_id = tostring(book_id or "")
+    local function lifecycle_is_current()
+        return lifecycle_generation == (self._pickthought_lifecycle_generation or 0)
+            and reader_session_generation == (self._reader_session_gen or 0)
+            and expected_book_id ~= ""
+            and expected_book_id == tostring(self._current_weread_book_id or "")
+    end
+    if not lifecycle_is_current() then return end
     if not popup or type(popup.visible_thought_items) ~= "function"
         or type(popup.refresh_comment_counts) ~= "function" then return end
     local shown = false
@@ -446,7 +494,8 @@ function M:_prefetchPickThoughtCommentCounts(popup, book_id)
         end
         if not has_retry then return end
         UIManager:scheduleIn(2, function()
-            if popup._popup_generation ~= popup_generation then return end
+            if not lifecycle_is_current()
+                or popup._popup_generation ~= popup_generation then return end
             local still_shown = false
             pcall(function() still_shown = UIManager:isWidgetShown(popup) == true end)
             if still_shown then
@@ -462,6 +511,8 @@ function M:_prefetchPickThoughtCommentCounts(popup, book_id)
             popup = popup,
             book_id = book_id,
             popup_generation = popup_generation,
+            lifecycle_generation = lifecycle_generation,
+            reader_session_generation = reader_session_generation,
         }
         return
     end
@@ -532,7 +583,10 @@ function M:_prefetchPickThoughtCommentCounts(popup, book_id)
         if queued then
             UIManager:scheduleIn(0.1, function()
                 local queued_popup = queued.popup
-                if queued_popup
+                if queued.lifecycle_generation == (self._pickthought_lifecycle_generation or 0)
+                    and queued.reader_session_generation == (self._reader_session_gen or 0)
+                    and tostring(queued.book_id or "") == tostring(self._current_weread_book_id or "")
+                    and queued_popup
                     and queued_popup._popup_generation == queued.popup_generation then
                     self:_prefetchPickThoughtCommentCounts(
                         queued_popup, queued.book_id)
@@ -543,6 +597,18 @@ function M:_prefetchPickThoughtCommentCounts(popup, book_id)
 
     local function poll()
         pcall(function() FFIUtil.isSubProcessDone(pid) end)
+        if not lifecycle_is_current() then
+            if type(FFIUtil.terminateSubProcess) == "function" then
+                pcall(FFIUtil.terminateSubProcess, pid)
+            end
+            if U.file_exists("/proc/" .. tostring(pid)) then
+                UIManager:scheduleIn(0.5, poll)
+                return
+            end
+            os.remove(result_path)
+            finish_prefetch()
+            return
+        end
         if U.file_exists(result_path) then
             local raw = U.read_file(result_path, true)
             os.remove(result_path)
@@ -633,7 +699,34 @@ function M:_prefetchPickThoughtCommentCounts(popup, book_id)
 end
 
 function M:cleanupPickThought()
+    self._pickthought_lifecycle_generation =
+        (self._pickthought_lifecycle_generation or 0) + 1
     self._pickthought_comment_prefetch_queued = nil
+
+    -- Invalidate and terminate in-flight comment-list workers. Their poll
+    -- callbacks reap the child before dropping the tracked PID.
+    local request_pids = self._pickthought_comment_request_pids or {}
+    local FFIUtil
+    if next(request_pids) then
+        pcall(function() FFIUtil = require("ffi/util") end)
+    end
+    for pid in pairs(request_pids) do
+        if FFIUtil and type(FFIUtil.terminateSubProcess) == "function" then
+            pcall(FFIUtil.terminateSubProcess, pid)
+        end
+    end
+
+    -- The count-prefetch poll owns the PID slot until the child is reaped.
+    -- Do not clear the slot here: a new book may queue behind this worker.
+    local prefetch_pid = self._pickthought_comment_prefetch_pid
+    if prefetch_pid and FFIUtil == nil then
+        pcall(function() FFIUtil = require("ffi/util") end)
+    end
+    if prefetch_pid and FFIUtil
+        and type(FFIUtil.terminateSubProcess) == "function" then
+        pcall(FFIUtil.terminateSubProcess, prefetch_pid)
+    end
+
     if self._pickthought_request and self._pickthought_worker then
         self._pickthought_worker:cancel(self._pickthought_request, "document_closed")
     end
