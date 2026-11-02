@@ -46,7 +46,25 @@ function Api:chapters(book_id)
     if type(chapters) ~= "table" or #chapters == 0 then
         error("微信读书没有返回可用章节列表")
     end
-    return chapters
+    -- WeRead Content.fetch_catalog 返回官方字段 chapterUid；
+    -- PickThought Sync.run 的章节契约使用 uid。这里做显式适配，
+    -- 不修改 WeRead 原始目录对象，也不让同步层拿到 nil 章节 ID。
+    local normalized = {}
+    for _, chapter in ipairs(chapters) do
+        if type(chapter) == "table" then
+            local uid = chapter.uid or chapter.chapterUid or chapter.chapter_uid
+            if uid ~= nil and tostring(uid) ~= "" then
+                local item = {}
+                for key, value in pairs(chapter) do item[key] = value end
+                item.uid = tostring(uid)
+                normalized[#normalized + 1] = item
+            end
+        end
+    end
+    if #normalized == 0 then
+        error("微信读书章节目录缺少 chapterUid")
+    end
+    return normalized
 end
 
 function Api:underlines(book_id, chapter_uid)
