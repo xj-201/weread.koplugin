@@ -1263,13 +1263,38 @@ function Sync.run(deps)
     end
 
     -- 重叠划线被合并的,把想法并进存活锚点的组:点一个虚线看到这一段全部想法。
-    if deps.merge_thoughts then
+    -- 优先按 book_id+chapter_uid 分组批量提交,确保同一章节的多条 merge 原子成功/失败。
+    if deps.merge_thoughts_batch then
+        local groups, group_order = {}, {}
+        for _, merge in ipairs(stats.merges or {}) do
+            local bid, uid = tostring(merge.book_id or book_ids[1]), tostring(merge.uid or "")
+            local key = bid .. "\0" .. uid
+            if not groups[key] then
+                groups[key] = { book_id = bid, uid = uid, merges = {} }
+                group_order[#group_order + 1] = key
+            end
+            groups[key].merges[#groups[key].merges + 1] = merge
+        end
+        for _, key in ipairs(group_order) do
+            local group = groups[key]
+            local merge_ok, merged, merge_err = pcall(deps.merge_thoughts_batch,
+                group.book_id, group.uid, group.merges)
+            if not merge_ok or merged ~= true then
+                remove(temp_dest)
+                local detail = merge_ok and tostring(merge_err or "数据库批量合并返回失败")
+                    or tostring(merged)
+                logger.warn("[撷思][Sync] thought range batch merge failed",
+                    "book=", group.book_id, "chapter=", group.uid,
+                    "count=", tostring(#group.merges), "error=", detail)
+                return nil, "想法数据合并失败,已取消 EPUB 替换;请重试同步(" .. detail .. ")"
+            end
+        end
+    elseif deps.merge_thoughts then
+        -- 兼容旧调用方;生产 runner 使用上面的批量接口。
         for _, merge in ipairs(stats.merges or {}) do
             local merge_ok, merged = pcall(deps.merge_thoughts,
                 merge.book_id or book_ids[1], merge.uid, merge.from, merge.into)
             if not merge_ok or merged ~= true then
-                -- 想法数据库未能与新 EPUB 的合并锚点保持一致时,禁止替换当前书。
-                -- 已完成的前序 merge 具备幂等去重;保留旧 EPUB 与临时输出供重试/诊断。
                 remove(temp_dest)
                 local detail = merge_ok and "数据库合并返回失败" or tostring(merged)
                 logger.warn("[撷思][Sync] thought range merge failed",
