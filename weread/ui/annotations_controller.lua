@@ -4,6 +4,7 @@ local Content = require("weread.lib.content")
 local Event = require("ui/event")
 local logger = require("weread.lib.logger")
 local ThoughtDB = require("weread.lib.thought_db")
+local ReviewComments = require("weread.lib.review_comments")
 local ThoughtPopup = require("weread.ui.thought_popup")
 local ThoughtPopupConfig = require("weread.ui.thought_popup.popup_config")
 local time = require("ui/time")
@@ -333,6 +334,9 @@ function M:_showThoughtPopup(pages, link, session_gen, tap_started)
                     UIManager:setDirty(self.dialog, "ui")
                 end
             end,
+            on_view_comments = function(item)
+                self:_showThoughtComments(item)
+            end,
         }))
     end)
     thought_perf("popup_show", popup_started, "ok=", tostring(ok),
@@ -350,6 +354,82 @@ function M:_showThoughtPopup(pages, link, session_gen, tap_started)
     if tap_started then
         thought_perf("tap_to_popup_return", tap_started, "pages=", tostring(#pages))
     end
+end
+
+-- Open a read-only comment list for the selected WeRead thought.
+-- The thought popup remains underneath; closing the list returns to it.
+function M:_showThoughtComments(item)
+    local review_id = tostring(item and item.review_id or "")
+    if review_id == "" then
+        self:showInfo(_("This thought has no comment ID."))
+        return false
+    end
+
+    local book_id = tostring(self._current_weread_book_id or "")
+    local book = self.settings:get("books", {})[book_id]
+    if book_id == "" or not book then
+        self:showInfo(_("The current WeRead book could not be identified."))
+        return false
+    end
+
+    local book_dir = Content.book_resolved_dir(self.settings, book_id, book)
+    local cache = ReviewComments.Cache.new(book_dir .. "/review_comments.db", self.client)
+
+    local function display(result)
+        if type(result) ~= "table" or result.ok ~= true then
+            self:showInfo(result and result.message or _("Unable to load comments."))
+            return
+        end
+        local rows = {}
+        for _, comment in ipairs(result.items or {}) do
+            local meta = tostring(comment.author or _("WeRead user"))
+            local likes = tonumber(comment.likes_count) or 0
+            meta = meta .. "  ·  " .. _("Likes") .. " " .. tostring(likes)
+            rows[#rows + 1] = {
+                text = meta .. "\n" .. tostring(comment.content or ""),
+            }
+        end
+        if #rows == 0 then
+            self:showInfo(_("This thought has no comments."))
+            return
+        end
+        local total = tonumber(result.total_count) or #rows
+        local title = _("Comments") .. " (" .. tostring(total) .. ")"
+        if total > #rows then
+            title = title .. " - showing " .. tostring(#rows)
+        end
+        self:showList(title, rows, _("This thought has no comments."))
+    end
+
+    local cached = cache:get(review_id)
+    if cached then
+        display(cached)
+        return true
+    end
+
+    if not self:requireLogin(true, false) then
+        return false
+    end
+    return self:runOnlineTask(_("Load comments"), function()
+        local ok, data, request_err = self.client:get_review_comments(
+            review_id, ReviewComments.MAX_COMMENTS, {
+                referer = "https://weread.qq.com/",
+                comments_direction = 0,
+                likes_count = 0,
+                synckey = 0,
+            })
+        if not ok then
+            self:showInfo(_("Unable to load comments: ") .. tostring(request_err or ""))
+            return
+        end
+        local result = ReviewComments.normalize_response(data)
+        if not result.ok then
+            self:showInfo(result.message or _("Unable to load comments."))
+            return
+        end
+        cache:put(review_id, result)
+        display(result)
+    end)
 end
 
 -- Recursively pull a thought anchor href out of a KOReader link object.

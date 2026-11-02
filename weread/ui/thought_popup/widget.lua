@@ -50,6 +50,7 @@ local ThoughtPopupWidget = InputContainer:extend{
     contrast = 9,
     tap_to_page = false,
     close_callback = nil,
+    on_view_comments = nil,
     dialog = nil,
 
     _pages = nil,
@@ -125,6 +126,7 @@ function ThoughtPopupWidget:_reopen(opts)
     if opts.tap_to_page ~= nil then self.tap_to_page = opts.tap_to_page end
     if opts.dialog then self.dialog = opts.dialog end
     self.close_callback = opts.close_callback
+    self.on_view_comments = opts.on_view_comments
     self.height_ratio = math.max(0.1, math.min(0.9, self.height_ratio or 0.70))
     self.height = math.floor(Screen:getHeight() * self.height_ratio)
 
@@ -267,26 +269,33 @@ end
 function ThoughtPopupWidget:_showThoughtActionMenu(item)
     local popup = self
     local action_dialog
-    action_dialog = ButtonDialog:new{
-        buttons = {
-            {
-                {
-                    text = _("Copy"),
-                    callback = function()
-                        UIManager:close(action_dialog)
-                        popup:_copyThoughtContent(item)
-                    end,
-                },
-                {
-                    text = _("Generate QR code"),
-                    callback = function()
-                        UIManager:close(action_dialog)
-                        popup:_generateQRCode(item)
-                    end,
-                },
-            },
+    local actions = {
+        {
+            text = _("Copy"),
+            callback = function()
+                UIManager:close(action_dialog)
+                popup:_copyThoughtContent(item)
+            end,
+        },
+        {
+            text = _("Generate QR code"),
+            callback = function()
+                UIManager:close(action_dialog)
+                popup:_generateQRCode(item)
+            end,
         },
     }
+    if type(self.on_view_comments) == "function"
+        and tostring(item and item.review_id or "") ~= "" then
+        actions[#actions + 1] = {
+            text = _("View comments"),
+            callback = function()
+                UIManager:close(action_dialog)
+                popup.on_view_comments(item, popup)
+            end,
+        }
+    end
+    action_dialog = ButtonDialog:new{ buttons = { actions } }
     UIManager:show(action_dialog)
 end
 

@@ -19,6 +19,32 @@ local function getSQ3()
     return nil
 end
 
+-- Check the live table definition instead of treating every ALTER failure as
+-- an expected duplicate-column error. PRAGMA table_info is supported by the
+-- SQLite versions used by KOReader and returns the column name at row[2].
+local function has_review_id_column(db)
+    local stmt = db:prepare("PRAGMA table_info(review_items)")
+    local found = false
+    local ok, err = pcall(function()
+        local row = stmt:step()
+        while row do
+            if row[2] == "review_id" then
+                found = true
+                break
+            end
+            row = stmt:step()
+        end
+    end)
+    local close_ok, close_err = pcall(function() stmt:close() end)
+    if not ok then
+        error(err)
+    end
+    if not close_ok then
+        error(close_err)
+    end
+    return found
+end
+
 --- Delete thoughts.db and WAL/SHM sidecars. Missing files are ignored.
 function ThoughtDB.remove_db(book_dir)
     if type(book_dir) ~= "string" or book_dir == "" then
@@ -71,9 +97,20 @@ function ThoughtDB.open(book_dir)
                 author      TEXT    NOT NULL,
                 content     TEXT    NOT NULL,
                 likes_count INTEGER NOT NULL DEFAULT 0,
+                review_id   TEXT    NOT NULL DEFAULT '',
                 PRIMARY KEY (chapter_uid, range, item_index)
             ) WITHOUT ROWID
         ]])
+        -- Upgrade existing per-book databases without discarding cached thoughts.
+        -- Do not silently swallow ALTER errors: a failed migration must prevent
+        -- this database from being used with INSERT/SELECT statements that need
+        -- review_id.
+        if not has_review_id_column(db) then
+            db:exec("ALTER TABLE review_items ADD COLUMN review_id TEXT NOT NULL DEFAULT ''")
+        end
+        if not has_review_id_column(db) then
+            error("review_items.review_id migration did not create the column")
+        end
     end)
     if not schema_ok then
         logger.warn("thought_db schema init failed:", db_path, schema_err)
@@ -91,7 +128,7 @@ function ThoughtDB.getReviewItems(db, chapter_uid, range_str)
 
     local ok, stmt = pcall(function()
         return db:prepare([[
-            SELECT abstract, author, content, likes_count
+            SELECT abstract, author, content, likes_count, review_id
             FROM review_items
             WHERE chapter_uid=? AND range=?
             ORDER BY item_index
@@ -113,6 +150,7 @@ function ThoughtDB.getReviewItems(db, chapter_uid, range_str)
             author = row[2],
             content = row[3],
             likes_count = row[4],
+            review_id = row[5] or "",
         }
         step_ok, row = pcall(function() return stmt:step() end)
         if not step_ok then
@@ -128,8 +166,8 @@ local function insert_reviews(db, chapter_uid, reviews)
     local Annotations = require("weread.lib.annotations")
     local insert_stmt = db:prepare([[
         INSERT INTO review_items
-            (chapter_uid, range, item_index, abstract, author, content, likes_count)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+            (chapter_uid, range, item_index, abstract, author, content, likes_count, review_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     ]])
 
     local by_range = {}
@@ -150,7 +188,8 @@ local function insert_reviews(db, chapter_uid, reviews)
         for item_index, item in ipairs(items) do
             insert_stmt:reset():bind(
                 chapter_uid, range_str, item_index,
-                item.abstract, item.author, item.content, item.likes_count
+                item.abstract, item.author, item.content, item.likes_count,
+                item.review_id or ""
             ):step()
             inserted = inserted + 1
         end
