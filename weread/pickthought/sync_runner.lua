@@ -170,6 +170,7 @@ function Runner.run(plugin, doc_path, book_id, worker_context, options)
                 append = inject_opts and inject_opts.append == true,
                 meta = inject_opts and inject_opts.meta,
                 book_ids = inject_opts and inject_opts.book_ids,
+                temp_suffix = inject_opts and inject_opts.temp_suffix,
                 progress = function(path, done, total, detail)
                     if worker_context and worker_context.cancelled
                         and worker_context.cancelled() then return false end
