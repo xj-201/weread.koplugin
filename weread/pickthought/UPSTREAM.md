@@ -8,7 +8,7 @@
 
 ## 已导入核心模块
 
-- 注入/映射：`annotations.lua`, `annotation_style.lua`, `chapter_map.lua`, `epub_inject.lua`, `epub_reader.lua`, `spine_cache.lua`, `sync_budget.lua`, `sync.lua`
+- 注入/映射：`annotations.lua`, `annotation_style.lua`, `chapter_map.lua`, `epub_inject.lua`, `epub_reader.lua`, `spine_cache.lua`, `sync_budget.lua`, `web_fetch.lua`, `sync.lua`
 - 想法存储/锚点：`thought_db.lua`, `thoughts.lua`, `binding.lua`
 - 评论：`review_comments.lua`
 - 弹窗：`thought_popup.lua`, `thought_popup/*.lua`
@@ -16,7 +16,7 @@
 
 ## 有意不导入的独立插件功能
 
-独立插件入口、独立登录与 Cookie、账户管理、独立书籍管理、独立菜单、同步 UI/任务控制器、更新器、独立网络协议/HTTP 客户端未导入。后续应由 WeRead 已有登录态、`Client`、书籍绑定和任务生命周期提供适配。
+独立插件入口、独立登录与 Cookie、账户管理、独立书籍管理、独立菜单、独立同步 UI/任务控制器、更新器、独立网络协议/HTTP 客户端未导入。弹窗中的复制/二维码等非评论操作也已从整合版入口移除。后续应由 WeRead 已有登录态、`Client`、书籍绑定和任务生命周期提供适配。
 
 ## 当前状态
 
