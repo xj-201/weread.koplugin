@@ -872,6 +872,7 @@ function Client:get_review_comments(review_id, count, opts)
         .. "?reviewId=" .. WeRead.urlencode(review_id)
         .. "&commentsCount=" .. tostring(comments_count)
         .. "&commentsDirection=" .. tostring(opts.comments_direction or 0)
+        .. "&commentsMaxIdx=" .. tostring(opts.comments_max_idx or 0)
         .. "&likesCount=" .. tostring(opts.likes_count or 0)
         .. "&synckey=" .. tostring(opts.synckey or 0)
 
