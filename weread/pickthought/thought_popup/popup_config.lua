@@ -13,8 +13,20 @@ local function clamp(value, min_value, max_value, fallback)
 end
 
 local function popupSettings(plugin)
-    local preferences = plugin and plugin.store and plugin.store:preferences() or {}
-    local settings = preferences.thoughts or {}
+    -- Integrated WeRead owns the settings database. Reading PickThought's
+    -- standalone store here silently ignored every setting exposed by the
+    -- existing WeRead "Thought popup settings" menu.
+    local settings = {}
+    if plugin and plugin.settings and type(plugin.settings.get) == "function" then
+        local ok, value = pcall(plugin.settings.get, plugin.settings, "thought_popup", {})
+        if ok and type(value) == "table" then settings = value end
+    end
+    -- Keep the standalone preference fallback for isolated popup previews/tests;
+    -- production WeRead settings take precedence.
+    if next(settings) == nil then
+        local preferences = plugin and plugin.store and plugin.store:preferences() or {}
+        settings = type(preferences.thoughts) == "table" and preferences.thoughts or {}
+    end
     return {
         height_ratio = clamp(settings.height_ratio, M.LIMITS.min_height_ratio,
             M.LIMITS.max_height_ratio, M.DEFAULTS.height_ratio),
