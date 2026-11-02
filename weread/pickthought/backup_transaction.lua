@@ -57,10 +57,11 @@ function Transaction:_write(path, value)
     return call_ok(self.write, path, encoded, true)
 end
 function Transaction:_read(path)
-    local raw, read_err = self.read(path, true)
+    local read_ok, raw, read_err = pcall(self.read, path, true)
+    if not read_ok then return nil, "manifest read failed: " .. tostring(raw) end
     if not raw then return nil, read_err or "manifest missing" end
-    local ok, value = pcall(self.decode, raw)
-    if not ok or type(value) ~= "table" then
+    local decode_ok, value = pcall(self.decode, raw)
+    if not decode_ok or type(value) ~= "table" then
         return nil, "manifest invalid: " .. tostring(value)
     end
     return value
@@ -213,6 +214,10 @@ function Transaction:commit(opts)
         return nil, "original_path must be the transaction root original.epub and new_original_path must exist"
     end
 
+    local operation = opts.operation or (original_changed and "rebuild" or "append")
+    if operation ~= "initial" and operation ~= "append" and operation ~= "rebuild" then
+        return nil, "unsupported transaction operation"
+    end
     local id = tostring(self.id())
     if not valid_id(id) then return nil, "invalid transaction id" end
     local paths = self:_paths(root, id)
@@ -222,7 +227,7 @@ function Transaction:commit(opts)
 
     local tx = {
         schema_version = 1, transaction_id = id,
-        operation = opts.operation or (original_changed and "rebuild" or "append"),
+        operation = operation,
         state = "preparing", doc_path = doc_path, original_path = original_path,
         original_changed = original_changed,
         original_existed_before = original_changed and self.exists(original_path) or false,
@@ -375,9 +380,18 @@ function Transaction:recover(root)
         return nil, "transaction manifest paths do not match the requested book root"
     end
     tx.manifest_path = paths.manifest
-    if tx.transaction_id ~= id or tx.schema_version ~= 1 then
-        return nil, "active transaction manifest identity/version mismatch"
+    if tx.transaction_id ~= id or tx.schema_version ~= 1
+        or type(tx.doc_path) ~= "string" or type(tx.original_changed) ~= "boolean"
+        or type(tx.original_existed_before) ~= "boolean" then
+        return nil, "active transaction manifest identity/version/fields mismatch"
     end
+    local valid_states = {
+        preparing = true, prepared = true, staging_current = true, current_staged = true,
+        staging_original = true, original_staged = true, installing_candidate = true,
+        candidate_installed = true, installing_original = true, original_installed = true,
+        committed = true, rolled_back = true, rollback_conflict = true,
+    }
+    if not valid_states[tx.state] then return nil, "unknown transaction state; refusing recovery" end
     if tx.state == "committed" or tx.state == "rolled_back" then
         root_manifest.active_transaction_id = nil
         if tx.state == "committed" then root_manifest.last_committed_transaction_id = id end
