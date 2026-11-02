@@ -132,6 +132,15 @@ function Transaction:_rollback(root_manifest_path, root_manifest, tx, paths)
         end
     elseif not self.exists(tx.doc_path) then
         errors[#errors + 1] = "both current EPUB and previous-current are missing"
+    elseif tx.previous_current_fingerprint then
+        -- A crash may happen after the staging checkpoint but before rename.
+        -- In that case the original must still be at doc_path; verify it rather
+        -- than treating any file at that path as a successful rollback.
+        local current_fp, fp_err = self:_fingerprint(tx.doc_path)
+        if not current_fp or current_fp ~= tx.previous_current_fingerprint then
+            errors[#errors + 1] = "current EPUB identity mismatch at " .. tx.doc_path
+                .. ": " .. tostring(fp_err or current_fp)
+        end
     end
 
     if tx.original_changed then
@@ -160,6 +169,16 @@ function Transaction:_rollback(root_manifest_path, root_manifest, tx, paths)
                 if not moved then errors[#errors + 1] = "cannot retain new original: " .. tostring(move_err) end
             elseif original_fp ~= tx.new_original_fingerprint then
                 errors[#errors + 1] = "unexpected original file; refusing to move: " .. tx.original_path
+            end
+        elseif tx.original_existed_before then
+            if not self.exists(tx.original_path) then
+                errors[#errors + 1] = "previous original and original path are both missing: " .. tostring(tx.original_path)
+            elseif tx.previous_original_fingerprint then
+                local original_fp, fp_err = self:_fingerprint(tx.original_path)
+                if not original_fp or original_fp ~= tx.previous_original_fingerprint then
+                    errors[#errors + 1] = "previous original identity mismatch at " .. tostring(tx.original_path)
+                        .. ": " .. tostring(fp_err or original_fp)
+                end
             end
         end
     end
@@ -246,11 +265,17 @@ function Transaction:commit(opts)
     if self.exists(root_manifest_path) then
         local existing, read_err = self:_read(root_manifest_path)
         if not existing then return nil, "existing root manifest is unreadable: " .. tostring(read_err) end
+        if existing.schema_version ~= 1 then
+            return nil, "existing root manifest has an unsupported schema"
+        end
         if existing.active_transaction_id then
             return nil, "another transaction is active: " .. tostring(existing.active_transaction_id)
         end
         if existing.state == "recovery_required" then
             return nil, "previous transaction requires manual recovery; refusing a new transaction"
+        end
+        if existing.state ~= "idle" then
+            return nil, "existing root manifest is not idle; refusing a new transaction"
         end
         root_manifest.last_committed_transaction_id = existing.last_committed_transaction_id
     end
@@ -363,18 +388,31 @@ end
 
 function Transaction:recover(root)
     if type(root) ~= "string" or root == "" then return nil, "root is required" end
+    root = root:gsub("/+$", "")
+    local suffix = ".pickthought"
+    if root == "" or root:sub(-#suffix) ~= suffix then
+        return nil, "root must end with '.pickthought'"
+    end
     local root_manifest_path = join(root, "manifest.json")
     if not self.exists(root_manifest_path) then return true, "no transaction manifest" end
     local root_manifest, err = self:_read(root_manifest_path)
     if not root_manifest then return nil, err end
     if root_manifest.schema_version ~= 1 then return nil, "unsupported root manifest schema" end
     local id = root_manifest.active_transaction_id
-    if not id then return true, "no active transaction" end
+    if not id then
+        if root_manifest.state ~= "idle" then
+            return nil, "root manifest has no active transaction but is not idle"
+        end
+        return true, "no active transaction"
+    end
+    if root_manifest.state ~= "active" and root_manifest.state ~= "recovery_required" then
+        return nil, "root manifest state conflicts with active transaction"
+    end
     if not valid_id(id) then return nil, "invalid active transaction id; refusing recovery" end
     local paths = self:_paths(root, id)
     local tx, tx_err = self:_read(paths.manifest)
     if not tx then return nil, "active transaction manifest unreadable: " .. tostring(tx_err) end
-    local expected_doc_path = root:sub(1, -#".pickthought" - 1)
+    local expected_doc_path = root:sub(1, -#suffix - 1)
     if expected_doc_path == "" or tx.doc_path ~= expected_doc_path
         or (tx.original_changed and tx.original_path ~= join(root, "original.epub")) then
         return nil, "transaction manifest paths do not match the requested book root"
