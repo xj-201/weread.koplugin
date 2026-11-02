@@ -403,10 +403,10 @@ function M:cleanupPickThought()
         pcall(function() self._pickthought_dialog:close() end)
         self._pickthought_dialog = nil
     end
-    local ok, popup = pcall(require, "weread.pickthought.thought_popup")
-    if ok and popup then pcall(popup.cleanup) end
-    local ok_thoughts, thoughts = pcall(require, "weread.pickthought.thoughts")
-    if ok_thoughts and thoughts then pcall(thoughts.clear_memory_cache) end
+    local popup = package.loaded["weread.pickthought.thought_popup"]
+    if popup then pcall(popup.cleanup) end
+    local thoughts = package.loaded["weread.pickthought.thoughts"]
+    if thoughts then pcall(thoughts.clear_memory_cache) end
 end
 
 return M
