@@ -430,7 +430,7 @@ function M:_prefetchPickThoughtCommentCounts(popup, book_id)
     -- 每条想法在当前对象生命周期内最多自动重试一次；只对网络类
     -- 临时故障重试，登录失效、限流和无效响应不自动重复请求。
     local function schedule_retry(items, retry_ids)
-        local retry_items = {}
+        local has_retry = false
         for _, item in ipairs(items) do
             local id = tostring(item.review_id or "")
             local generation = pending_generations[item]
@@ -441,10 +441,10 @@ function M:_prefetchPickThoughtCommentCounts(popup, book_id)
                 and (tonumber(item._comment_count_prefetch_retries) or 0) < 1 then
                 item._comment_count_prefetch_retries =
                     (tonumber(item._comment_count_prefetch_retries) or 0) + 1
-                retry_items[#retry_items + 1] = item
+                has_retry = true
             end
         end
-        if #retry_items == 0 then return end
+        if not has_retry then return end
         UIManager:scheduleIn(2, function()
             if popup._popup_generation ~= popup_generation then return end
             local still_shown = false
@@ -589,6 +589,14 @@ function M:_prefetchPickThoughtCommentCounts(popup, book_id)
         end
         if not U.file_exists("/proc/" .. tostring(pid)) then
             os.remove(result_path)
+            local still_shown = false
+            pcall(function() still_shown = UIManager:isWidgetShown(popup) == true end)
+            if still_shown and popup_is_current() then
+                -- The child exited without producing a result file. Treat
+                -- this as one transient worker failure, not as a successful
+                -- empty response.
+                schedule_retry(pending)
+            end
             finish_prefetch()
             return
         end
