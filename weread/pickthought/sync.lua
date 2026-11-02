@@ -1349,15 +1349,13 @@ function Sync.run(deps)
     -- clean_source 重建当前注入版时,旧 .orig 也必须纳入同一笔事务:
     -- 最终换位失败后,当前书可以回滚但备份不能悄悄变成另一版本。
     local rollback_clean_backup
+    local kept_backup_paths = {}
+    local prior_backup_to_restore
     -- 将现有 .orig 暂存到 .orig.old 前,先保留可能存在的上一份 .orig.old。
     -- 旧暂存文件即使看起来陈旧,也不能在未确认前直接删除。
     local function stage_clean_backup()
         local old_backup = backup .. ".old"
         local had_backup = file_exists(backup)
-        if not had_backup then
-            return file_exists(old_backup), nil
-        end
-
         local kept_old
         if file_exists(old_backup) then
             local suffix = tostring(temp_suffix)
@@ -1371,7 +1369,10 @@ function Sync.run(deps)
             if not kept_ok then
                 return nil, "无法保留既有 .orig.old(" .. tostring(kept_err or "重命名失败") .. ")"
             end
+            kept_backup_paths[#kept_backup_paths + 1] = kept_old
+            if not had_backup then prior_backup_to_restore = kept_old end
         end
+        if not had_backup then return false, nil end
 
         local staged, stage_err = rename(backup, old_backup)
         if not staged then
@@ -1507,6 +1508,13 @@ function Sync.run(deps)
                     local ok_rm, rm_err = remove(backup)
                     if not ok_rm then
                         return nil, "无法清理新 .orig 备份(" .. tostring(rm_err or "删除失败") .. ")"
+                    end
+                end
+                if prior_backup_to_restore and file_exists(prior_backup_to_restore) then
+                    local restored, restore_err = rename(prior_backup_to_restore, backup)
+                    if not restored then
+                        return nil, "此前 .orig.old 已保留于 " .. prior_backup_to_restore
+                            .. ",但恢复到 .orig 失败(" .. tostring(restore_err or "重命名失败") .. ")"
                     end
                 end
                 return true
@@ -1726,6 +1734,10 @@ function Sync.run(deps)
     -- 清理结果必须检查:失败残留的 .orig.old 可能被后续误当有效旧备份恢复,须明确
     -- 记录并随报告提示(作者 2026-08-20 第7轮意见③)。
     local cleanup_warnings = {}
+    for _, kept_path in ipairs(kept_backup_paths) do
+        cleanup_warnings[#cleanup_warnings + 1] = "历史 .orig 备份已保留于 " .. tostring(kept_path)
+        logger.info("[撷思][Sync] 历史 .orig 备份已保留", kept_path)
+    end
     local old_path = doc_path .. ".old"
     if file_exists(old_path) then
         -- 作者第8轮:本 .old 是原始干净书(kept_original)时保留不删,供用户手动恢复;
