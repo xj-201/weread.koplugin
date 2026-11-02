@@ -481,12 +481,6 @@ function CenterThoughtPopupWidget:_enterComments(item, result)
         items = self.items,
         page_index = self.page_index,
     }
-    -- 就地记录评论数:item 与 self.items 里的想法条目是同一张表,
-    -- 翻页回到列表后 meta 行即可显示"评论 N"(下次点开会刷新)。
-    if type(item) == "table" then
-        item.comment_count = tonumber(result.total_count)
-            or tonumber(item.comment_count) or 0
-    end
     self._comment_view = {
         parent_item = item,
         title = CommentsView.comment_title(item),
