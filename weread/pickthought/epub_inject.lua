@@ -13,13 +13,14 @@ local lfs = require("libs/libkoreader-lfs")
 
 -- 候选名包含进程内序号、高分辨率时钟和随机数,并用 mkdir 原子占位防止跨进程撞名。
 local temp_sequence = 0
-local function reserve_temp_paths(dest, now)
+local function reserve_temp_paths(dest, now, unique_seed)
     for _ = 1, 32 do
         temp_sequence = temp_sequence + 1
         local pointer = tostring({}):gsub("[^%w]", "")
         local token = table.concat({
             tostring(now()), tostring(os.clock()):gsub("[^%w]", ""),
-            tostring(math.random(100000, 999999)), tostring(temp_sequence), pointer,
+            tostring(unique_seed or ""), tostring(math.random(100000, 999999)),
+            tostring(temp_sequence), pointer,
         }, "-")
         local tmp = dest .. ".tmp-" .. token
         local lock_dir = tmp .. ".lock"
@@ -357,7 +358,7 @@ function M.inject_copy(src, book_id, chapters, opts)
 
     local dest = opts.dest or M.copy_path(src)
     local mtime = now() -- ZIP 条目时间戳/marker 时间仍使用原有秒级时间,与临时路径 token 分离。
-    local tmp, disk_tmp, temp_lock, reserve_err = reserve_temp_paths(dest, now)
+    local tmp, disk_tmp, temp_lock, reserve_err = reserve_temp_paths(dest, now, opts.temp_suffix)
     if not tmp then return nil, "无法分配 EPUB 临时路径:" .. tostring(reserve_err) end
     local function release_temp_lock()
         if not temp_lock then return true end
