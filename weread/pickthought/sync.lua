@@ -1534,14 +1534,18 @@ function Sync.run(deps)
                 local function backup_failure_hint()
                     if backup_ok then
                         if backup_staged then return "旧 .orig 备份已恢复" end
-                        return "未检测到旧 .orig 备份,新 .orig 已清理"
+                        if prior_backup_to_restore then
+                            return "没有标准 .orig 备份;此前 .orig.old 已保留并恢复到 .orig"
+                        end
+                        return "没有旧 .orig 备份,新 .orig 已清理"
                     end
                     if not backup_staged then
                         return "新 .orig 备份清理失败(" .. tostring(backup_err or "未知") .. ")"
                             .. ";请检查 " .. backup
                     end
-                    return "旧 .orig 备份恢复失败(" .. tostring(backup_err or "未知") .. ")"
-                        .. ";请手动将 " .. old_backup .. " 重命名为 " .. backup
+                    return "旧 .orig 备份自动恢复失败(" .. tostring(backup_err or "未知") .. ")"
+                        .. ";候选旧备份仍在 " .. old_backup
+                        .. ",当前 " .. backup .. " 可能仍是本次新备份或保留副本;请先核对文件,不要直接覆盖"
                 end
                 if copy_status == "cancelled" then
                     -- 复制被用户取消:doc_path 已暂存为 .old,同时恢复旧 .orig。
@@ -1636,12 +1640,17 @@ function Sync.run(deps)
                     if backup_staged then
                         rb_hint = "旧 .orig 备份已恢复(.orig.old→.orig)"
                     else
-                        rb_hint = "未检测到旧 .orig 备份,新 .orig 已清理"
+                        if prior_backup_to_restore then
+                            rb_hint = "没有标准 .orig 备份;此前 .orig.old 已保留并恢复到 .orig"
+                        else
+                            rb_hint = "没有旧 .orig 备份,新 .orig 已清理"
+                        end
                     end
                 else
                     if backup_staged then
-                        rb_hint = "旧 .orig 备份恢复失败(" .. tostring(rb_err or "未知") .. "),请手动将 "
-                            .. old_backup .. " 重命名为 " .. backup .. " 以恢复备份"
+                        rb_hint = "旧 .orig 备份自动恢复失败(" .. tostring(rb_err or "未知")
+                            .. "),候选旧备份仍在 " .. old_backup .. ";当前 " .. backup
+                            .. " 可能仍是本次新备份或保留副本,请先核对文件,不要直接覆盖""
                     else
                         rb_hint = "新 .orig 备份清理失败(" .. tostring(rb_err or "未知")
                             .. "),请检查 " .. backup
@@ -1669,7 +1678,8 @@ function Sync.run(deps)
                         .. "请关闭本书或确认未被占用后重试"
                 end
                 local rb_hint = backup_staged and ("且旧 .orig 备份回滚失败(" .. tostring(rb_err or "未知")
-                    .. ");请手动将 " .. old_backup .. " 重命名为 " .. backup .. " 以恢复备份")
+                    .. ");候选旧备份仍在 " .. old_backup .. ",请先核对 " .. backup
+                    .. " 是否占用,不要直接覆盖")
                     or ("且新 .orig 备份清理失败(" .. tostring(rb_err or "未知") .. ");请检查 " .. backup)
                 return nil, "干净源已固化但无法暂存当前书(.old)," .. rb_hint
             end
@@ -1718,17 +1728,18 @@ function Sync.run(deps)
                 end
                 if rec_err then msg = msg .. "。恢复动作失败:" .. tostring(rec_err) end
                 if not rb_ok then
-                    msg = msg .. ";旧 .orig 备份恢复失败,请手动将 " .. (backup .. ".old")
-                        .. " 重命名为 " .. backup .. "(" .. tostring(rb_err or "未知") .. ")"
+                    msg = msg .. ";旧 .orig 备份自动恢复失败(" .. tostring(rb_err or "未知")
+                        .. "),候选旧备份仍在 " .. (backup .. ".old")
+                        .. ";请先核对 " .. backup .. " 是否占用,不要直接覆盖"
                 end
                 return nil, msg
             end
             -- 恢复成功:提示必须与实际文件状态一致(作者意见 #2)。
             local rb_hint = ""
             if not rb_ok then
-                rb_hint = ";但旧 .orig 备份回滚未能自动完成,请手动将 "
-                    .. (backup .. ".old") .. " 重命名为 " .. backup .. " 以恢复备份("
-                    .. tostring(rb_err or "未知") .. ")"
+                rb_hint = ";但旧 .orig 备份自动回滚未完成(" .. tostring(rb_err or "未知")
+                    .. "),候选旧备份仍在 " .. (backup .. ".old")
+                    .. ";请先核对 " .. backup .. " 是否占用,不要直接覆盖"
             end
             if recovered_from == "clean" then
                 return nil, "无法替换原书,已恢复干净原书(.orig→doc_path):" .. tostring(swap_err or "重命名失败") .. rb_hint
