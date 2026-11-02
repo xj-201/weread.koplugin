@@ -138,6 +138,8 @@ function CenterThoughtPopupWidget:init()
 end
 
 function CenterThoughtPopupWidget:_reopen(opts)
+    self._popup_generation = (self._popup_generation or 0) + 1
+    self._comment_request_token = (self._comment_request_token or 0) + 1
     local height_before = self.height
     self.items = opts.items or {}
     if opts.doc_font_name then self.doc_font_name = opts.doc_font_name end
@@ -340,6 +342,8 @@ function CenterThoughtPopupWidget:_syncButtons()
 end
 
 function CenterThoughtPopupWidget:onCloseWidget()
+    self._popup_generation = (self._popup_generation or 0) + 1
+    self._comment_request_token = (self._comment_request_token or 0) + 1
     -- 整个弹窗被关闭:清空导航栈并释放评论视图状态(实施文档 §5)。
     if self._viewport_settle_cb then
         UIManager:unschedule(self._viewport_settle_cb)
