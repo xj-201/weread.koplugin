@@ -6,6 +6,9 @@ local logger = require("weread.lib.logger")
 local ThoughtDB = require("weread.lib.thought_db")
 local ThoughtPopup = require("weread.ui.thought_popup")
 local ThoughtPopupConfig = require("weread.ui.thought_popup.popup_config")
+local PickThoughts = require("weread.pickthought.thoughts")
+local PickThoughtPopup = require("weread.pickthought.thought_popup")
+local PickThoughtPopupConfig = require("weread.pickthought.thought_popup.popup_config")
 local time = require("ui/time")
 local UIManager = require("ui/uimanager")
 
@@ -148,9 +151,14 @@ end
 
 -- Current SQLite/JSON-era anchors use #wrthought-BOOK-CHAPTER-START-END.
 -- Earlier HTML-embedded footnotes used #thought_CHAPTER_START_END.
+local function isPickThoughtHref(href)
+    return type(href) == "string" and href:find("pickthought%-") ~= nil
+end
+
 local function isThoughtHref(href)
     return type(href) == "string"
-        and (href:find("wrthought%-") ~= nil
+        and (isPickThoughtHref(href)
+            or href:find("wrthought%-") ~= nil
             or href:match("#?thought_.+_%d+_%d+") ~= nil)
 end
 
@@ -184,7 +192,9 @@ function M:_installLinkFilter()
         if not isThoughtHref(href) then
             return link
         end
-        if (plugin._usesUnifiedAnnotations and plugin:_usesUnifiedAnnotations())
+        local pickthought = isPickThoughtHref(href)
+        if (not pickthought and plugin._usesUnifiedAnnotations
+                and plugin:_usesUnifiedAnnotations())
             or plugin.settings:get("cache").show_annotations == false
             or isPageTurnEdgeTap(plugin, ges) then
             return nil
@@ -205,7 +215,10 @@ function M:_installLinkFilter()
                 local link = plugin._orig_getLinkFromGes(link_self, ges)
                 if link then
                     local href = plugin:_linkHref(link)
-                    if isThoughtHref(href) then
+                    local pickthought = isPickThoughtHref(href)
+                    if isThoughtHref(href)
+                        and (pickthought or not (plugin._usesUnifiedAnnotations
+                            and plugin:_usesUnifiedAnnotations())) then
                         return false
                     end
                 end
@@ -253,6 +266,7 @@ function M:_teardownThoughtInterception()
         self._thought_db_dir = nil
         self._thought_db_book_id = nil
     end
+    if self.cleanupPickThought then self:cleanupPickThought() end
     self._thought_popup_open = nil
     self._current_thought_popup = nil
     self._thought_page_cache = nil
@@ -362,7 +376,9 @@ function M:_linkHref(link)
             return nil
         end
         if type(value) == "string" then
-            return value:match("(#wrthought%-[%w%._%-]+)")
+            return value:match("(#pickthought%-[%x%.]+)")
+                or value:match("(pickthought%-[%x%.]+)")
+                or value:match("(#wrthought%-[%w%._%-]+)")
                 or value:match("(wrthought%-[%w%._%-]+)")
                 or value:match("(#thought_[%w%._%-]+)")
                 or value:match("(thought_[%w%._%-]+)")
@@ -386,6 +402,75 @@ function M:_linkHref(link)
         return nil
     end
     return extract(link, 0)
+end
+
+function M:_queuePickThoughtPopup(items, info, link, tap_started)
+    if type(items) ~= "table" or #items == 0 then return true end
+    if self._thought_popup_open then
+        if PickThoughtPopup.isShowing() then return true end
+        self._thought_popup_open = nil
+    end
+    self._thought_popup_open = true
+    local session_gen = self._reader_session_gen or 0
+    UIManager:nextTick(function()
+        if session_gen ~= self._reader_session_gen
+            or not self.ui or not self.ui.document then
+            self._thought_popup_open = nil
+            return
+        end
+        self:_showPickThoughtPopup(items, info, link, session_gen, tap_started)
+    end)
+    return true
+end
+
+function M:_showPickThoughtPopup(items, info, link, session_gen, tap_started)
+    if session_gen ~= self._reader_session_gen then
+        self._thought_popup_open = nil
+        return
+    end
+    local document = self.ui.document
+    if link and link.from_xpointer then
+        local ok = pcall(function()
+            document:highlightXPointer()
+            document:highlightXPointer(link.from_xpointer)
+        end)
+        if ok then
+            self._thought_highlight_active = true
+            UIManager:setDirty(self.dialog, "partial")
+        end
+    end
+    local popup
+    local options = PickThoughtPopupConfig.build(self, items, {
+        close_callback = function()
+            self._thought_popup_open = nil
+            self._current_thought_popup = nil
+            if self._thought_highlight_active then
+                self._thought_highlight_active = nil
+                pcall(function() document:highlightXPointer() end)
+                UIManager:setDirty(self.dialog, "ui")
+            end
+        end,
+        on_view_comments = function(item, active_popup)
+            return self:_viewPickThoughtComments(info.book_id, item, active_popup)
+        end,
+        on_visible_items_settled = function()
+            if popup then self:_prefetchPickThoughtCommentCounts(popup, info.book_id) end
+        end,
+    })
+    local ok, result = pcall(function() return PickThoughtPopup.show(options) end)
+    if not ok then
+        logger.warn("PickThought popup failed:", result)
+        self._thought_popup_open = nil
+        self:_clearThoughtHighlight(document)
+        return
+    end
+    popup = result
+    self._current_thought_popup = popup
+    UIManager:scheduleIn(0.6, function()
+        if popup and self._current_thought_popup == popup then
+            self:_prefetchPickThoughtCommentCounts(popup, info.book_id)
+        end
+    end)
 end
 
 -- Parse "#wrthought-<book>-<chapter>-<start>-<end>" into its parts. The last two
@@ -555,6 +640,26 @@ function M:_onThoughtTap(ges)
     if not isThoughtHref(href) then
         -- Some other EPUB link (footnote, TOC, external) → let KOReader handle it.
         return false
+    end
+
+    local pickthought_info = PickThoughts.parse_href(href)
+    if pickthought_info then
+        if tostring(pickthought_info.book_id) ~= tostring(self._current_weread_book_id)
+            or self.settings:get("cache").show_annotations == false then
+            return false
+        end
+        local store = self:_pickThoughtStore()
+        local group, find_err = PickThoughts.find(store, pickthought_info.book_id,
+            pickthought_info.chapter_uid, pickthought_info.range)
+        local items = group and PickThoughts.popup_items(group) or nil
+        if type(items) ~= "table" or #items == 0 then
+            logger.warn("PickThought anchor has no stored thought:",
+                tostring(pickthought_info.chapter_uid), tostring(pickthought_info.range),
+                tostring(find_err or ""))
+            self:showTransientInfo(_("No thought data found for this PickThought link."), 2)
+            return true
+        end
+        return self:_queuePickThoughtPopup(items, pickthought_info, link, tap_started)
     end
 
     -- Annotations hidden: _installLinkFilter already made getLinkFromGes return nil
