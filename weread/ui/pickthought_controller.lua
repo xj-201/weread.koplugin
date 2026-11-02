@@ -386,6 +386,10 @@ function M:_prefetchPickThoughtCommentCounts(popup, book_id)
     local shown = false
     pcall(function() shown = UIManager:isWidgetShown(popup) == true end)
     if not shown then return end
+    -- This invocation represents the latest settled viewport. Replace any
+    -- older queued viewport; if nothing needs fetching below, the old queue
+    -- must not run after the active worker finishes.
+    self._pickthought_comment_prefetch_queued = nil
     local connected = false
     pcall(function()
         connected = require("ui/network/manager"):isConnected() == true
@@ -423,9 +427,14 @@ function M:_prefetchPickThoughtCommentCounts(popup, book_id)
     if changed then popup:refresh_comment_counts() end
     if #pending == 0 then return end
 
-    -- 只预取当前视口的评论数；请求在子进程串行执行，阅读器 UI 不被 HTTP 阻塞。
-    if self._pickthought_comment_prefetch_pid
-        and U.file_exists("/proc/" .. tostring(self._pickthought_comment_prefetch_pid)) then
+    -- 只运行一个预取子进程。若旧任务尚未完成，保存最新视口；
+    -- 旧任务结束后会重新扫描该视口，而不是沿用过期的 pending 列表。
+    if self._pickthought_comment_prefetch_pid then
+        self._pickthought_comment_prefetch_queued = {
+            popup = popup,
+            book_id = book_id,
+            popup_generation = popup_generation,
+        }
         return
     end
     local FFIUtil = require("ffi/util")
@@ -473,6 +482,27 @@ function M:_prefetchPickThoughtCommentCounts(popup, book_id)
     self._pickthought_comment_prefetch_pid = pid
     local deadline = os.time() + 180
 
+    -- Release this worker exactly once and replay only the newest queued
+    -- viewport. Re-scan live popup items so closed/reopened or scrolled views
+    -- cannot reuse an obsolete pending list.
+    local function finish_prefetch()
+        if self._pickthought_comment_prefetch_pid == pid then
+            self._pickthought_comment_prefetch_pid = nil
+        end
+        local queued = self._pickthought_comment_prefetch_queued
+        self._pickthought_comment_prefetch_queued = nil
+        if queued then
+            UIManager:scheduleIn(0.1, function()
+                local queued_popup = queued.popup
+                if queued_popup
+                    and queued_popup._popup_generation == queued.popup_generation then
+                    self:_prefetchPickThoughtCommentCounts(
+                        queued_popup, queued.book_id)
+                end
+            end)
+        end
+    end
+
     local function poll()
         pcall(function() FFIUtil.isSubProcessDone(pid) end)
         if U.file_exists(result_path) then
@@ -505,12 +535,12 @@ function M:_prefetchPickThoughtCommentCounts(popup, book_id)
                 end
                 if updated then popup:refresh_comment_counts() end
             end
+            finish_prefetch()
             return
         end
         if not U.file_exists("/proc/" .. tostring(pid)) then
-            if self._pickthought_comment_prefetch_pid == pid then
-                self._pickthought_comment_prefetch_pid = nil
-            end
+            os.remove(result_path)
+            finish_prefetch()
             return
         end
         if os.time() >= deadline then
@@ -518,9 +548,7 @@ function M:_prefetchPickThoughtCommentCounts(popup, book_id)
                 pcall(FFIUtil.terminateSubProcess, pid)
             end
             os.remove(result_path)
-            if self._pickthought_comment_prefetch_pid == pid then
-                self._pickthought_comment_prefetch_pid = nil
-            end
+            finish_prefetch()
             return
         end
         UIManager:scheduleIn(0.5, poll)
@@ -529,6 +557,7 @@ function M:_prefetchPickThoughtCommentCounts(popup, book_id)
 end
 
 function M:cleanupPickThought()
+    self._pickthought_comment_prefetch_queued = nil
     if self._pickthought_request and self._pickthought_worker then
         self._pickthought_worker:cancel(self._pickthought_request, "document_closed")
     end
