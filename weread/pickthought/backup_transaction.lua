@@ -2,6 +2,7 @@
 -- Not wired into sync.lua until fault-injection specs cover recovery behavior.
 local U = require("weread.pickthought.util")
 local Json = require("weread.pickthought.json")
+local lfs = require("libs/libkoreader-lfs")
 local Transaction = {}
 Transaction.__index = Transaction
 
@@ -28,6 +29,7 @@ function Transaction.new(deps)
     local fs = deps.fs or {}
     return setmetatable({
         exists = fs.exists or U.file_exists,
+        dir_exists = fs.dir_exists or function(path) return lfs.attributes(path, "mode") == "directory" end,
         mkdir = fs.mkdir or U.mkdir,
         rename = fs.rename or os.rename,
         fingerprint = fs.fingerprint or U.content_fingerprint,
@@ -187,6 +189,7 @@ function Transaction:commit(opts)
         or type(candidate_path) ~= "string" or candidate_path == "" then
         return nil, "root, doc_path and candidate_path are required"
     end
+    if doc_path == candidate_path then return nil, "candidate_path must differ from doc_path" end
     if not self.exists(doc_path) then return nil, "current EPUB does not exist: " .. doc_path end
     if not self.exists(candidate_path) then return nil, "candidate EPUB does not exist: " .. candidate_path end
     if type(self.validate) ~= "function" then return nil, "EPUB validator is required" end
@@ -194,14 +197,16 @@ function Transaction:commit(opts)
     local original_path, new_original_path = opts.original_path, opts.new_original_path
     local original_changed = new_original_path ~= nil
     if original_changed and (type(original_path) ~= "string" or original_path == ""
-        or not self.exists(new_original_path)) then
+        or original_path == doc_path or original_path == candidate_path
+        or new_original_path == doc_path or new_original_path == candidate_path
+        or new_original_path == original_path or not self.exists(new_original_path)) then
         return nil, "original_path and an existing new_original_path are required when changing baseline"
     end
 
     local id = tostring(self.id())
     if not valid_id(id) then return nil, "invalid transaction id" end
     local paths = self:_paths(root, id)
-    if self.exists(paths.dir) then return nil, "transaction directory already exists: " .. paths.dir end
+    if self.dir_exists(paths.dir) then return nil, "transaction directory already exists: " .. paths.dir end
     local made, mkdir_err = call_ok(self.mkdir, paths.dir)
     if not made then return nil, "cannot create transaction directory: " .. tostring(mkdir_err) end
 
@@ -347,6 +352,7 @@ function Transaction:recover(root)
     if not self.exists(root_manifest_path) then return true, "no transaction manifest" end
     local root_manifest, err = self:_read(root_manifest_path)
     if not root_manifest then return nil, err end
+    if root_manifest.schema_version ~= 1 then return nil, "unsupported root manifest schema" end
     local id = root_manifest.active_transaction_id
     if not id then return true, "no active transaction" end
     if not valid_id(id) then return nil, "invalid active transaction id; refusing recovery" end
