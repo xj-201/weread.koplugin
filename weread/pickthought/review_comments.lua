@@ -202,6 +202,7 @@ function M.normalize_response(data, requested_review_id)
         ok = true,
         items = items,
         total_count = total,
+        raw_count = #raw,
         truncated = total > #items,
         review_id = trim(tostring(requested_review_id or "")),
     }
