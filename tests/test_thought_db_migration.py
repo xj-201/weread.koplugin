@@ -53,7 +53,30 @@ def columns(conn):
     return {row[1] for row in conn.execute("PRAGMA table_info(review_items)")}
 
 
+def ensure_review_id_column(conn):
+    if "review_id" not in columns(conn):
+        conn.execute(extract_migration_sql())
+
+
 class ThoughtDBMigrationTests(unittest.TestCase):
+    def test_lua_checks_column_before_migration_and_does_not_hide_alter_errors(self):
+        self.assertIn('db:prepare("PRAGMA table_info(review_items)")', SOURCE)
+        self.assertRegex(
+            SOURCE,
+            r"if not has_review_id_column\(db\) then\\s+db:exec\\(\"ALTER TABLE review_items ADD COLUMN review_id",
+        )
+        self.assertNotRegex(
+            SOURCE,
+            r"pcall\\(function\\(\\)\\s*db:exec\\(\"ALTER TABLE review_items",
+        )
+
+    def test_migration_is_idempotent_when_column_already_exists(self):
+        conn = sqlite3.connect(":memory:")
+        conn.execute(extract_schema_sql())
+        ensure_review_id_column(conn)
+        self.assertIn("review_id", columns(conn))
+        conn.close()
+
     def test_fresh_schema_includes_review_id(self):
         conn = sqlite3.connect(":memory:")
         conn.execute(extract_schema_sql())
