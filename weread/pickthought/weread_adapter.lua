@@ -17,6 +17,16 @@ local function book_for(plugin, book_id)
     local books = plugin.settings:get("books", {})
     local original = books[tostring(book_id)] or books[book_id]
     if type(original) ~= "table" then
+        local path = plugin.ui and plugin.ui.document and plugin.ui.document.file
+        local entry = path and plugin.external_annotations_db
+            and plugin.external_annotations_db:getDocument(path)
+        local binding = entry and entry.binding
+        if type(binding) == "table"
+            and tostring(binding.book_id or "") == tostring(book_id) then
+            original = binding
+        end
+    end
+    if type(original) ~= "table" then
         error("WeRead 书籍不存在或尚未绑定: " .. tostring(book_id))
     end
     -- ReaderState 会写入 psvts/pclts/token 等单次请求状态；使用浅拷贝，
