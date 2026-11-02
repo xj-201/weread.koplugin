@@ -453,8 +453,8 @@ function M:_showPickThoughtPopup(items, info, link, session_gen, tap_started)
                 UIManager:setDirty(self.dialog, "ui")
             end
         end,
-        on_view_comments = function(item, active_popup)
-            return self:_viewPickThoughtComments(info.book_id, item, active_popup)
+        on_view_comments = function(item, active_popup, request_token)
+            return self:_viewPickThoughtComments(info.book_id, item, active_popup, request_token)
         end,
         on_visible_items_settled = function()
             if popup then self:_prefetchPickThoughtCommentCounts(popup, info.book_id) end
