@@ -1,5 +1,13 @@
 -- Fault-injection tests for the isolated EPUB backup transaction layer.
 package.path = "./?.lua;" .. package.path
+-- Keep this spec runnable outside KOReader: production injects its filesystem
+-- and JSON implementation, while the module only needs these imports loaded.
+package.preload["libs/libkoreader-lfs"] = function()
+    return { attributes = function() return nil end, mkdir = function() return true end }
+end
+package.preload["json"] = function()
+    return { encode = function() return "{}" end, decode = function() return {} end }
+end
 
 local Transaction = require("weread.pickthought.backup_transaction")
 local function clone(value)
