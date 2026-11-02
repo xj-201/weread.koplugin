@@ -1349,6 +1349,44 @@ function Sync.run(deps)
     -- clean_source 重建当前注入版时,旧 .orig 也必须纳入同一笔事务:
     -- 最终换位失败后,当前书可以回滚但备份不能悄悄变成另一版本。
     local rollback_clean_backup
+    -- 将现有 .orig 暂存到 .orig.old 前,先保留可能存在的上一份 .orig.old。
+    -- 旧暂存文件即使看起来陈旧,也不能在未确认前直接删除。
+    local function stage_clean_backup()
+        local old_backup = backup .. ".old"
+        local had_backup = file_exists(backup)
+        if not had_backup then
+            return file_exists(old_backup), nil
+        end
+
+        local kept_old
+        if file_exists(old_backup) then
+            local suffix = tostring(temp_suffix)
+            kept_old = backup .. ".old.kept-" .. suffix
+            local index = 0
+            while file_exists(kept_old) do
+                index = index + 1
+                kept_old = backup .. ".old.kept-" .. suffix .. "-" .. tostring(index)
+            end
+            local kept_ok, kept_err = rename(old_backup, kept_old)
+            if not kept_ok then
+                return nil, "无法保留既有 .orig.old(" .. tostring(kept_err or "重命名失败") .. ")"
+            end
+        end
+
+        local staged, stage_err = rename(backup, old_backup)
+        if not staged then
+            if kept_old then
+                local restored, restore_err = rename(kept_old, old_backup)
+                if not restored then
+                    return nil, "无法暂存旧 .orig(" .. tostring(stage_err or "重命名失败")
+                        .. ");此前 .orig.old 已保留在 " .. kept_old
+                        .. ",恢复原路径失败(" .. tostring(restore_err or "重命名失败") .. ")"
+                end
+            end
+            return nil, "无法暂存旧 .orig 备份(" .. tostring(stage_err or "重命名失败") .. ")"
+        end
+        return true, nil
+    end
     if src == doc_path and not append then
         -- 首次:原书让位为备份,注入版顶上原路径(进度侧车不动)。
         local ok_backup, backup_err = rename(doc_path, backup)
@@ -1455,26 +1493,10 @@ function Sync.run(deps)
                     end
                 end
             end
-            local old_backup = backup .. ".old"
-            local had_backup = file_exists(backup)
-            -- 上次中断可能只留下 .orig.old。它仍是唯一可恢复的干净备份,
-            -- 即使标准 .orig 缺失也必须纳入本次事务,失败时恢复回 .orig。
-            local backup_staged = not had_backup and file_exists(old_backup)
-            if had_backup then
-                -- 旧 .orig 先离位,避免新源复制成功后覆盖掉唯一可用的干净备份。
-                if file_exists(old_backup) then
-                    local ok_rm, rm_err = remove(old_backup)
-                    if not ok_rm then
-                        remove(temp_dest)
-                        return nil, "无法清理旧备份暂存(" .. tostring(rm_err or "删除失败") .. "),请重试"
-                    end
-                end
-                local ok_stage, stage_err = rename(backup, old_backup)
-                if not ok_stage then
-                    remove(temp_dest)
-                    return nil, "无法暂存旧 .orig 备份(" .. tostring(stage_err or "重命名失败") .. "),请重试"
-                end
-                backup_staged = true
+            local backup_staged, backup_stage_err = stage_clean_backup()
+            if backup_staged == nil then
+                remove(temp_dest)
+                return nil, tostring(backup_stage_err or "无法安全暂存旧 .orig 备份")
             end
             rollback_clean_backup = function()
                 if backup_staged then
@@ -1570,18 +1592,10 @@ function Sync.run(deps)
                     end
                 end
             end
-            local old_backup = backup .. ".old"
-            local had_backup = file_exists(backup)
-            local backup_staged = not had_backup and file_exists(old_backup)
-            if had_backup then
-                if file_exists(old_backup) then
-                    local ok_rm2 = remove(old_backup)
-                    if not ok_rm2 then remove(temp_dest); return nil, "无法清理旧备份暂存,请重试" end
-                end
-                if not rename(backup, old_backup) then
-                    remove(temp_dest); return nil, "无法暂存旧 .orig 备份,请重试"
-                end
-                backup_staged = true
+            local backup_staged, backup_stage_err = stage_clean_backup()
+            if backup_staged == nil then
+                remove(temp_dest)
+                return nil, tostring(backup_stage_err or "无法安全暂存旧 .orig 备份")
             end
             rollback_clean_backup = function()
                 if backup_staged then
