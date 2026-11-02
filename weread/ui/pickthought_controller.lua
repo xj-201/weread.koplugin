@@ -357,6 +357,8 @@ function M:_viewPickThoughtComments(book_id, item, popup, request_token)
         popup:_showCommentNotice("正在加载评论…")
     end
     local deadline = os.time() + 180
+    local result_received = false
+    local timeout_notified = false
     local function poll()
         pcall(function() FFIUtil.isSubProcessDone(pid) end)
         if not lifecycle_is_current() then
@@ -374,6 +376,7 @@ function M:_viewPickThoughtComments(book_id, item, popup, request_token)
             return
         end
         if U.file_exists(result_path) then
+            result_received = true
             local raw = U.read_file(result_path, true)
             os.remove(result_path)
             local ok_decode, result = pcall(Json.decode, raw or "")
@@ -398,7 +401,8 @@ function M:_viewPickThoughtComments(book_id, item, popup, request_token)
             if self._pickthought_comment_request_pids then
                 self._pickthought_comment_request_pids[pid] = nil
             end
-            if request_is_current() and popup._showCommentNotice then
+            if not result_received and not timeout_notified
+                and request_is_current() and popup._showCommentNotice then
                 popup:_showCommentNotice(ReviewComments.message_for("network"))
             end
             return
@@ -410,7 +414,9 @@ function M:_viewPickThoughtComments(book_id, item, popup, request_token)
             end
             os.remove(result_path)
             if U.file_exists("/proc/" .. tostring(pid)) then
-                if request_is_current() and popup._showCommentNotice then
+                if not timeout_notified and request_is_current()
+                    and popup._showCommentNotice then
+                    timeout_notified = true
                     popup:_showCommentNotice(ReviewComments.message_for("network"))
                 end
                 UIManager:scheduleIn(0.5, poll)
@@ -419,7 +425,9 @@ function M:_viewPickThoughtComments(book_id, item, popup, request_token)
             if self._pickthought_comment_request_pids then
                 self._pickthought_comment_request_pids[pid] = nil
             end
-            if request_is_current() and popup._showCommentNotice then
+            if not timeout_notified and request_is_current()
+                and popup._showCommentNotice then
+                timeout_notified = true
                 popup:_showCommentNotice(ReviewComments.message_for("network"))
             end
             return
