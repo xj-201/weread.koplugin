@@ -126,19 +126,52 @@ function Sync.run(deps)
     -- 多书合并注入必须基于干净 .orig 整体重建,不能走增量 append(否则漏书)。
     local doc_path = tostring(deps.doc_path)
     local backup = Sync.backup_path(doc_path)
-    -- 旧 .orig 备份恢复:把 .orig.old 还原为标准 .orig 路径(作者 2026-08-19 意见 #1)。
-    -- 仅当 .orig.old 存在时有动作;.orig 目标若已存在(新固化残缺/半成品)先移除再还原
-    -- (Windows rename 不允许覆盖已存在目标)。返回 true 或 nil,err。
+    -- 恢复 .orig.old 时先验证它确实是可用的干净 EPUB。
+    -- 若标准 .orig 已存在,先将其改名保留,绝不先删除唯一可能有效的备份；
+    -- 恢复失败时尝试把被保留的 .orig 放回原位。
     local function restore_backup_old()
         local old_backup = backup .. ".old"
         if not file_exists(old_backup) then return true end
+
+        local old_call_ok, old_meta, old_meta_err = pcall(deps.load_meta, old_backup)
+        if not old_call_ok or not old_meta then
+            return nil, "旧 .orig 暂存无法解析,已保留且未改动标准备份("
+                .. tostring(old_meta_err or old_meta or "读取失败") .. ")"
+        end
+        if old_meta.has and old_meta.has[EpubInject.MARKER] == true then
+            return nil, "旧 .orig 暂存实际是注入版,已保留且未改动标准备份"
+        end
+
+        local kept_backup
         if file_exists(backup) then
-            local ok_rm = remove(backup)
-            if not ok_rm then
-                return nil, "无法移除残缺的 .orig 目标(" .. tostring(backup) .. ")"
+            local suffix = tostring(os.time()) .. "-"
+                .. tostring(math.random(100000, 999999)) .. "-" .. tostring({})
+            suffix = suffix:gsub("[^%w%-]", "")
+            kept_backup = backup .. ".kept-restore-" .. suffix
+            local index = 0
+            while file_exists(kept_backup) do
+                index = index + 1
+                kept_backup = backup .. ".kept-restore-" .. suffix .. "-" .. tostring(index)
+            end
+            local staged, stage_err = rename(backup, kept_backup)
+            if not staged then
+                return nil, "无法安全保留现有 .orig(" .. tostring(stage_err or "重命名失败") .. ")"
             end
         end
-        return try_recover(old_backup, backup)
+
+        local restored, restore_err = try_recover(old_backup, backup)
+        if restored then return true end
+
+        if kept_backup then
+            local rolled_back, rollback_err = rename(kept_backup, backup)
+            if not rolled_back then
+                return nil, tostring(restore_err or "恢复 .orig.old 失败")
+                    .. ";原 .orig 已保留在 " .. kept_backup
+                    .. ",回滚也失败(" .. tostring(rollback_err or "重命名失败") .. ")"
+            end
+        end
+        return nil, tostring(restore_err or "恢复 .orig.old 失败")
+            .. (kept_backup and ";原 .orig 已回滚" or "")
     end
     local current_meta, current_meta_err = deps.load_meta(doc_path)
     -- 当前 EPUB 存在但解析失败(损坏):绝不能当作"干净原书"继续,
