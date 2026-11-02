@@ -144,6 +144,20 @@ function BaseThoughtPopupWidget:_showCommentNotice(message)
     })
 end
 
+--- 分页触及上限时明确告知用户,避免把部分评论误认为完整列表。
+function BaseThoughtPopupWidget:_showIncompleteCommentsNotice(result, loaded_count)
+    if type(result) ~= "table" or result.truncated ~= true then return end
+    local loaded = math.max(0, tonumber(loaded_count) or 0)
+    local total = tonumber(result.total_count)
+    local message
+    if total and total > loaded then
+        message = string.format("评论较多，当前显示 %d/%d 条。", loaded, total)
+    else
+        message = string.format("评论较多，当前仅加载 %d 条，列表可能不完整。", loaded)
+    end
+    self:_showCommentNotice(message)
+end
+
 --- 长按想法的动作菜单:查看评论(无 review_id 置灰)/复制/生成二维码。
 function BaseThoughtPopupWidget:_showThoughtActionMenu(item)
     -- WeRead 整合版只保留「查看评论」入口；独立撷思的复制/二维码
