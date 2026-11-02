@@ -415,15 +415,17 @@ function M:_prefetchPickThoughtCommentCounts(popup, book_id)
         local child_ok, results = pcall(function()
             local out = {}
             for index, review_id in ipairs(ids) do
-                local result = ReviewComments.cache_get(cache, review_id, function()
-                    local ok, data, err = self.client:get_review_comments(review_id, 30)
-                    if not ok then
-                        local kind = comment_error_kind(err)
-                        return {ok = false, error = kind,
-                            message = ReviewComments.message_for(kind)}
-                    end
-                    return ReviewComments.normalize_response(data, review_id)
-                end, book_id, os.time(), ttl)
+                -- Count prefetch only needs commentsCount. Do not put this
+                -- single-page response into the full comment-list cache.
+                local ok, data, err = self.client:get_review_comments(review_id, 30)
+                local result
+                if not ok then
+                    local kind = comment_error_kind(err)
+                    result = {ok = false, error = kind,
+                        message = ReviewComments.message_for(kind)}
+                else
+                    result = ReviewComments.normalize_response(data, review_id)
+                end
                 if type(result) == "table" and result.ok then
                     out[#out + 1] = {
                         review_id = review_id,
