@@ -483,6 +483,7 @@ function CenterThoughtPopupWidget:_enterComments(item, result)
     -- 关键:弹窗已处于显示状态时,_buildLayout 不会自动触发重绘;
     -- 缺少 setDirty 会导致屏幕停留在旧的想法弹窗,看起来像"没有反应"。
     self:_applyContentAndRepaint()
+    self:_showIncompleteCommentsNotice(result, #comments)
     return true
 end
 
