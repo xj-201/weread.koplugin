@@ -105,6 +105,10 @@ end
 --- 打开某条想法的评论:长按菜单与中间点击共用的链路。
 function BaseThoughtPopupWidget:_openItemComments(item)
     if type(self.on_view_comments) ~= "function" then return end
+    -- 每次发起评论请求都换 token;旧请求即使在同一个 pooled popup
+    -- 上迟到,也不能把旧想法的评论塞进当前视图。
+    self._comment_request_token = (self._comment_request_token or 0) + 1
+    local request_token = self._comment_request_token
     if type(item) ~= "table" or type(item.review_id) ~= "string"
         or item.review_id == "" then
         self:_showCommentNotice("这条想法缺少评论 ID")
@@ -115,7 +119,7 @@ function BaseThoughtPopupWidget:_openItemComments(item)
         logger.info("[撷思][ReviewComments] menu action",
             "review_id=", tostring(item.review_id))
     end
-    local call_ok, result = pcall(self.on_view_comments, item, self)
+    local call_ok, result = pcall(self.on_view_comments, item, self, request_token)
     if diagnostic then
         logger.info("[撷思][ReviewComments] callback done",
             "call_ok=", tostring(call_ok),
