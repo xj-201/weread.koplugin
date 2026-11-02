@@ -102,7 +102,15 @@ function M:toggleAnnotationVisibility()
     self.settings:flush()
     if not cache.show_annotations then
         ThoughtPopup.closeVisible()
+        -- PickThought uses its own pooled native popup; hiding WeRead annotations
+        -- must close that popup as well, otherwise comments/thought text remain
+        -- visible after the user has hidden all annotations.
+        local ok, PickThoughtPopup = pcall(require, "weread.pickthought.thought_popup")
+        if ok and PickThoughtPopup then
+            pcall(PickThoughtPopup.closeVisible)
+        end
         self._thought_popup_open = nil
+        self._current_thought_popup = nil
     end
     self:applyAnnotationVisibility()
     if cache.show_annotations and self.ensureAnnotationDisplay then
