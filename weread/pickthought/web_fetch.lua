@@ -1,5 +1,5 @@
 -- 数据源:微信读书划线 + 想法。
-local Http_ok, Http = pcall(require, "pickthought.http")
+local Http_ok, Http = pcall(require, "weread.pickthought.http")
 -- Web underlines/readReviews 优先,失败时回退 Gateway 同名接口;
 -- 按章取全部划线,再按 range 拉该段全部想法(count=30)。
 -- 输出与原 Annotations:fetch_chapter 同形:
