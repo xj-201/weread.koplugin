@@ -336,12 +336,6 @@ function ThoughtPopupWidget:_enterComments(item, result)
         items = self.items,
         scroll_offset = self._scroll_container and self._scroll_container.scroll_offset or 0,
     }
-    -- 就地记录评论数:item 与 self.items 里的想法条目是同一张表,
-    -- 返回想法列表后 meta 行即可显示"评论 N"(下次点开会刷新)。
-    if type(item) == "table" then
-        item.comment_count = tonumber(result.total_count)
-            or tonumber(item.comment_count) or 0
-    end
     self._comment_view = {
         parent_item = item,
         total_count = result.total_count,
