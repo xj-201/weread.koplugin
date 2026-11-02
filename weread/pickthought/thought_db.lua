@@ -546,28 +546,88 @@ function ThoughtDB.close_no_checkpoint(db)
     end
 end
 
+-- 执行一条带参数的 DML。reset/bind 必须返回可继续调用的 statement；
+-- step 只把明确的 false 当失败(nil 在部分 ljsqlite3 DML 完成路径中可表示无结果行)。
+local function run_bound_statement(db, sql, ...)
+    local ok_prepare, stmt = pcall(function() return db:prepare(sql) end)
+    if not ok_prepare or not stmt then
+        return false, "prepare: " .. tostring(stmt or "返回空句柄")
+    end
+    local function fail(stage, detail)
+        pcall(function() stmt:close() end)
+        return false, stage .. ": " .. tostring(detail or "失败")
+    end
+    local ok_reset, reset_result = pcall(function() return stmt:reset() end)
+    if not ok_reset or not reset_result then
+        return fail("reset", ok_reset and "返回失败" or reset_result)
+    end
+    local params = {...}
+    local ok_bind, bind_result = pcall(function()
+        return reset_result:bind(unpack(params))
+    end)
+    if not ok_bind or not bind_result then
+        return fail("bind", ok_bind and "返回失败" or bind_result)
+    end
+    local ok_step, step_result = pcall(function() return bind_result:step() end)
+    if not ok_step or step_result == false then
+        return fail("step", ok_step and "返回失败" or step_result)
+    end
+    local ok_close, close_result = pcall(function() return stmt:close() end)
+    if not ok_close or close_result == false then
+        return false, "close: " .. tostring(ok_close and "返回失败" or close_result)
+    end
+    return true
+end
+
 local function insert_rows(db, chapter_uid, groups)
-    local ins = db:prepare([[INSERT INTO review_items
-        (chapter_uid, range, item_index, abstract, author, content, likes, review_id)
-        VALUES (?,?,?,?,?,?,?,?)]])
+    local ins
+    local ok_prepare, prepare_result = pcall(function()
+        ins = db:prepare([[INSERT INTO review_items
+            (chapter_uid, range, item_index, abstract, author, content, likes, review_id)
+            VALUES (?,?,?,?,?,?,?,?)]])
+        return ins
+    end)
+    if not ok_prepare or not ins then
+        error("insert prepare: " .. tostring(prepare_result or "返回空句柄"))
+    end
+    local function fail(stage, detail)
+        pcall(function() ins:close() end)
+        error(stage .. ": " .. tostring(detail or "失败"))
+    end
     for _, group in ipairs(groups or {}) do
         local range = tostring((type(group) == "table" and group.range) or "")
         if range ~= "" then
             for idx, item in ipairs((type(group) == "table" and group.texts) or {}) do
                 if type(item) == "table" and tostring(item.content or "") ~= "" then
-                    ins:reset():bind(
-                        chapter_uid, range, idx,
-                        tostring(item.abstract or ""),
-                        tostring(item.author or ""),
-                        tostring(item.content or ""),
-                        tonumber(item.likes or 0) or 0,
-                        tostring(item.review_id or "")
-                    ):step()
+                    local ok_reset, reset_result = pcall(function() return ins:reset() end)
+                    if not ok_reset or not reset_result then
+                        fail("insert reset", ok_reset and "返回失败" or reset_result)
+                    end
+                    local ok_bind, bind_result = pcall(function()
+                        return reset_result:bind(
+                            chapter_uid, range, idx,
+                            tostring(item.abstract or ""),
+                            tostring(item.author or ""),
+                            tostring(item.content or ""),
+                            tonumber(item.likes or 0) or 0,
+                            tostring(item.review_id or "")
+                        )
+                    end)
+                    if not ok_bind or not bind_result then
+                        fail("insert bind", ok_bind and "返回失败" or bind_result)
+                    end
+                    local ok_step, step_result = pcall(function() return bind_result:step() end)
+                    if not ok_step or step_result == false then
+                        fail("insert step", ok_step and "返回失败" or step_result)
+                    end
                 end
             end
         end
     end
-    ins:close()
+    local ok_close, close_result = pcall(function() return ins:close() end)
+    if not ok_close or close_result == false then
+        error("insert close: " .. tostring(ok_close and "返回失败" or close_result))
+    end
 end
 
 -- 替换一章的全部想法(groups 形状同 Thoughts.save 输入)。单事务。
@@ -576,9 +636,9 @@ function ThoughtDB.put_chapter(db, chapter_uid, groups)
     chapter_uid = tostring(chapter_uid or "")
     local ok, err = pcall(function()
         db:exec("BEGIN")
-        local del = db:prepare("DELETE FROM review_items WHERE chapter_uid=?")
-        del:reset():bind(chapter_uid):step()
-        del:close()
+        local deleted, delete_err = run_bound_statement(db,
+            "DELETE FROM review_items WHERE chapter_uid=?", chapter_uid)
+        if not deleted then error(delete_err) end
         insert_rows(db, chapter_uid, groups)
         db:exec("COMMIT")
     end)
@@ -596,9 +656,9 @@ function ThoughtDB.put_range(db, chapter_uid, range_str, texts)
     chapter_uid, range_str = tostring(chapter_uid or ""), tostring(range_str or "")
     local ok, err = pcall(function()
         db:exec("BEGIN")
-        local del = db:prepare("DELETE FROM review_items WHERE chapter_uid=? AND range=?")
-        del:reset():bind(chapter_uid, range_str):step()
-        del:close()
+        local deleted, delete_err = run_bound_statement(db,
+            "DELETE FROM review_items WHERE chapter_uid=? AND range=?", chapter_uid, range_str)
+        if not deleted then error(delete_err) end
         insert_rows(db, chapter_uid, { { range = range_str, texts = texts } })
         db:exec("COMMIT")
     end)
