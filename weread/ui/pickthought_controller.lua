@@ -549,7 +549,13 @@ function M:_prefetchPickThoughtCommentCounts(popup, book_id)
             local decoded_ok, results = pcall(Json.decode, raw or "")
             local still_shown = false
             pcall(function() still_shown = UIManager:isWidgetShown(popup) == true end)
-            if still_shown and popup_is_current() and decoded_ok and type(results) == "table" then
+            if still_shown and popup_is_current()
+                and (not decoded_ok or type(results) ~= "table") then
+                -- A corrupt/partial worker result is not a successful empty
+                -- count response. Allow the same single bounded retry.
+                schedule_retry(pending)
+            elseif still_shown and popup_is_current()
+                and decoded_ok and type(results) == "table" then
                 local counts, retry_ids = {}, {}
                 for _, row in ipairs(results) do
                     local id = tostring(row.review_id or "")
