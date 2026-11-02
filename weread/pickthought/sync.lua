@@ -1389,17 +1389,19 @@ function Sync.run(deps)
                 -- 改为改名 .old.kept 让出 .old 给当前脏注入版作回滚暂存,并记入 kept_original 跳过成功清理。
                 local ok_meta, old_meta = pcall(function() return deps.load_meta(old_path) end)
                 if ok_meta and old_meta and old_meta.has and old_meta.has[EpubInject.MARKER] ~= true then
-                    local kept_path = doc_path .. ".old.kept"
-                    if file_exists(kept_path) then
-                        local ok_rk = remove(kept_path)
-                        if not ok_rk then
-                            remove(temp_dest)
-                            return nil, "无法清理旧的保留干净书,请重试"
-                        end
+                    -- 不覆盖此前保留的干净原书;每次重建都使用本任务 token,
+                    -- 若路径意外冲突则递增序号,避免删除任何历史副本。
+                    local kept_path = doc_path .. ".old.kept-" .. temp_suffix
+                    local kept_index = 0
+                    while file_exists(kept_path) do
+                        kept_index = kept_index + 1
+                        kept_path = doc_path .. ".old.kept-" .. temp_suffix .. "-" .. tostring(kept_index)
                     end
-                    if not rename(old_path, kept_path) then
+                    local kept_ok, kept_err = rename(old_path, kept_path)
+                    if not kept_ok then
                         remove(temp_dest)
-                        return nil, "无法保留原始干净书(.old→.old.kept),请重试"
+                        return nil, "无法保留原始干净书(" .. old_path .. "→" .. kept_path
+                            .. "):" .. tostring(kept_err or "重命名失败")
                     end
                     kept_original = kept_path
                 else
@@ -1495,8 +1497,35 @@ function Sync.run(deps)
             -- 并把当前书暂存为 .old 保留,避免用户打开的版本被覆盖销毁(作者意见 #4)。
             local old_path = doc_path .. ".old"
             if file_exists(old_path) then
-                local ok_rm = remove(old_path)
-                if not ok_rm then remove(temp_dest); return nil, "无法清理旧的暂存文件,请重试" end
+                -- 前置恢复检查可能认定 .old 是此前保留的干净原书。
+                -- 此处不能再无条件删除;损坏/无法解析的副本也先保留并中止。
+                local old_meta_ok, old_meta = pcall(function() return deps.load_meta(old_path) end)
+                if not old_meta_ok or not old_meta then
+                    remove(temp_dest)
+                    return nil, "存在无法解析的暂存文件 " .. old_path
+                        .. ",已保留文件并中止重建,请先人工确认其内容"
+                end
+                if not (old_meta.has and old_meta.has[EpubInject.MARKER] == true) then
+                    local kept_path = doc_path .. ".old.kept-" .. temp_suffix
+                    local kept_index = 0
+                    while file_exists(kept_path) do
+                        kept_index = kept_index + 1
+                        kept_path = doc_path .. ".old.kept-" .. temp_suffix .. "-" .. tostring(kept_index)
+                    end
+                    local kept_ok, kept_err = rename(old_path, kept_path)
+                    if not kept_ok then
+                        remove(temp_dest)
+                        return nil, "无法保留旧的干净原书(" .. old_path .. "→" .. kept_path
+                            .. "):" .. tostring(kept_err or "重命名失败")
+                    end
+                    if not kept_original then kept_original = kept_path end
+                else
+                    local ok_rm, rm_err = remove(old_path)
+                    if not ok_rm then
+                        remove(temp_dest)
+                        return nil, "无法清理旧的注入暂存文件(" .. tostring(rm_err or old_path) .. "),请重试"
+                    end
+                end
             end
             local old_backup = backup .. ".old"
             local had_backup = file_exists(backup)
