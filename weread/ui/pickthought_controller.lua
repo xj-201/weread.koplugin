@@ -123,9 +123,12 @@ function M:startPickThoughtInjection(options)
                 and outcome.value.ok then
                 local report = outcome.value.report or {}
                 local message = string.format(
-                    "PickThought 注入完成。已处理划线：%s；已注入章节：%s。",
-                    tostring(report.total_underlines or report.underlines or "—"),
-                    tostring(report.injected_files or report.chapters_matched or "—"))
+                    "PickThought 注入完成。\n拉取划线：%s 条\n成功注入划线：%s 条\n成功注入想法：%s 条\n匹配章节：%s 章\n原书备份：%s\n\n请关闭并重新打开本书以加载新副本。",
+                    tostring(report.total_underlines or "—"),
+                    tostring(report.underlines_injected or "—"),
+                    tostring(report.thoughts_injected or "—"),
+                    tostring(report.chapters_matched or "—"),
+                    tostring(report.backup or "—"))
                 self:showInfo(message)
             elseif outcome and outcome.cancelled then
                 self:showTransientInfo(_("PickThought injection paused. Saved chapter data can be reused."), 3)
