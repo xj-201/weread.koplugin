@@ -17,7 +17,7 @@ local M = {}
 local DEFAULT_TTL = 1800
 local VALID_TTL = { [0] = true, [300] = true, [600] = true, [1800] = true, [3600] = true }
 
--- 每本本地书的缓存上限(按 last_access_at 淘汰最旧)。
+-- 每本本地书的缓存上限(按最近写入时间 last_access_at 淘汰最旧)。
 local DEFAULT_MAX_ITEMS = 128
 
 M.DEFAULT_TTL_SECONDS = DEFAULT_TTL
@@ -308,7 +308,7 @@ local function query_error(stage, detail)
     return "评论缓存" .. tostring(stage) .. "失败: " .. tostring(detail or "未知错误")
 end
 
---- 读取未过期缓存;命中后更新 last_access_at。
+--- 只读未过期缓存;读取不更新 last_access_at,避免读路径争用写锁。
 --- 返回 record = { items, total_count, fetched_at } 或 nil(未命中/过期/不可用)。
 function Cache:get(review_id, now)
     review_id = trim(tostring(review_id or ""))
@@ -415,7 +415,7 @@ function Cache:clear()
     return ok == true
 end
 
---- 惰性清理过期记录(打开缓存、查询前、写入后已顺带执行;
+--- 惰性清理过期记录(写入后顺带执行;
 --- 书籍关闭/插件重置时由调用方主动触发)。
 function Cache:purge_expired(now)
     now = tonumber(now) or os.time()
@@ -452,7 +452,7 @@ function M.cache_get(cache, review_id, loader, book_id, now, ttl)
     end
     local result = loader()
     if type(result) ~= "table" or not result.ok then
-        -- 过期行已在 get 的懒清理中删除,刷新失败不降级展示旧评论。
+        -- 过期行视为未命中;刷新失败不降级展示旧评论。
         return result
     end
     if cache and ttl > 0 then
