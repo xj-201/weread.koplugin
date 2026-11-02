@@ -457,8 +457,22 @@ function CenterThoughtPopupWidget:_enterComments(item, result)
     end
     if type(result) ~= "table" or not result.ok then return false end
     local comments = type(result.items) == "table" and result.items or {}
+    -- Refresh the thought count even when the server returned no comment rows.
+    -- A positive server total with an empty page is incomplete data, not proof
+    -- that the thought has no comments.
+    if type(item) == "table" then
+        item.comment_count = tonumber(result.total_count)
+            or tonumber(item.comment_count) or 0
+    end
     if #comments == 0 then
-        self:_showCommentNotice("这条想法暂无评论")
+        local total = tonumber(result.total_count) or 0
+        if total > 0 then
+            self:_showCommentNotice(string.format(
+                "微信读书报告有 %d 条评论，但本次没有返回评论内容，请稍后重试。",
+                total))
+        else
+            self:_showCommentNotice("这条想法暂无评论")
+        end
         return false
     end
     self._navigation = self._navigation or {}
