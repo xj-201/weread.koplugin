@@ -1377,7 +1377,7 @@ function Sync.run(deps)
                         remove(temp_dest)
                         return nil, "无法清理旧的注入暂存文件(" .. tostring(rm_err or old_path) .. "),请重试"
                     end
-                endd
+                end
             end
         end
         -- 安全前置(P1#3):确认当前 doc_path 确实是注入版;若当前仍是干净原书
@@ -1394,7 +1394,11 @@ function Sync.run(deps)
                 -- 绝不能删除或覆盖它——否则连续两次 clean_source 重建会销毁用户最初的干净原书。
                 -- 改为改名 .old.kept 让出 .old 给当前脏注入版作回滚暂存,并记入 kept_original 跳过成功清理。
                 local ok_meta, old_meta = pcall(function() return deps.load_meta(old_path) end)
-                if ok_meta and old_meta and old_meta.has and old_meta.has[EpubInject.MARKER] ~= true then
+                if not ok_meta or not old_meta then
+                    remove(temp_dest)
+                    return nil, "暂存文件 " .. old_path
+                        .. " 无法解析,已保留且中止操作;请先人工确认或恢复该文件"
+                elseif not (old_meta.has and old_meta.has[EpubInject.MARKER] == true) then
                     -- 不覆盖此前保留的干净原书;每次重建都使用本任务 token,
                     -- 若路径意外冲突则递增序号,避免删除任何历史副本。
                     local kept_path = doc_path .. ".old.kept-" .. temp_suffix
