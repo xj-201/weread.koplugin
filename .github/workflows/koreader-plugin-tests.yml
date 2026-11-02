@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - ci/koreader-plugin-tests
+      - feature/read-only-thought-comments
+      - main
   pull_request:
     branches:
       - feature/read-only-thought-comments
