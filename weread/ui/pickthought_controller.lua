@@ -385,7 +385,6 @@ function M:_prefetchPickThoughtCommentCounts(popup, book_id)
     local cache = ReviewComments.Cache.new{
         path = store:book_dir(book_id) .. "/review_comments.db",
     }
-    local ttl = ReviewComments.DEFAULT_TTL_SECONDS
     local popup_generation = popup._popup_generation
     local function popup_is_current()
         return popup._popup_generation == popup_generation
