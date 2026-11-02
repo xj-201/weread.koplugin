@@ -340,7 +340,8 @@ function Thoughts.merge(store, book_id, chapter_uid, from_range, into_range)
             "error=", tostring(from_err))
         return false
     end
-    if #from_texts == 0 then return false end
+    -- 来源范围没有想法属于正常 no-op,不是数据库合并失败。
+    if #from_texts == 0 then return true end
     local into_texts, into_err = ThoughtDB.get_range(db, uid, into_range)
     if not into_texts then
         discard_cached_db(store:book_dir(book_id), db)
