@@ -1,7 +1,7 @@
 -- 撷思想法弹窗的统一配置。阅读入口只传入 plugin 和 SQLite 规范化后的 items，
 -- 这里负责把当前书籍字体、页面边距和用户偏好收敛成弹窗参数。
 local M = {}
-local Config = require("weread.pickthought.config")
+local Config = require("weread.lib.pickthought.config")
 
 M.DEFAULTS = Config.THOUGHT_POPUP_DEFAULTS
 M.LIMITS = Config.THOUGHT_POPUP_LIMITS

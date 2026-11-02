@@ -10,14 +10,14 @@ onClose 的注释已合并);行为必须保持与收敛前完全一致。
 --]]--
 
 local ButtonDialog = require("ui/widget/buttondialog")
-local CommentsView = require("weread.pickthought.thought_popup.comments_view")
+local CommentsView = require("weread.ui.pickthought.thought_popup.comments_view")
 local Device = require("device")
 local InfoMessage = require("ui/widget/infomessage")
 local InputContainer = require("ui/widget/container/inputcontainer")
-local PopupDiagnostic = require("weread.pickthought.diagnostic")
+local PopupDiagnostic = require("weread.lib.pickthought.diagnostic")
 local UIManager = require("ui/uimanager")
 local WidgetContainer = require("ui/widget/container/widgetcontainer")
-local logger = require("logger")
+local logger = require("weread.lib.logger")
 
 local Screen = Device.screen
 

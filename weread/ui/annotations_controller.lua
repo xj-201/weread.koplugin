@@ -406,7 +406,7 @@ end
 
 function M:_queuePickThoughtPopup(items, info, link, tap_started)
     if type(items) ~= "table" or #items == 0 then return true end
-    local PickThoughtPopup = require("weread.pickthought.thought_popup")
+    local PickThoughtPopup = require("weread.ui.pickthought.thought_popup")
     if self._thought_popup_open then
         if PickThoughtPopup.isShowing() then return true end
         self._thought_popup_open = nil
@@ -429,8 +429,8 @@ function M:_showPickThoughtPopup(items, info, link, session_gen, tap_started)
         self._thought_popup_open = nil
         return
     end
-    local PickThoughtPopup = require("weread.pickthought.thought_popup")
-    local PickThoughtPopupConfig = require("weread.pickthought.thought_popup.popup_config")
+    local PickThoughtPopup = require("weread.ui.pickthought.thought_popup")
+    local PickThoughtPopupConfig = require("weread.ui.pickthought.thought_popup.popup_config")
     local document = self.ui.document
     if link and link.from_xpointer then
         local ok = pcall(function()
@@ -645,7 +645,7 @@ function M:_onThoughtTap(ges)
         return false
     end
 
-    local PickThoughts = require("weread.pickthought.thoughts")
+    local PickThoughts = require("weread.lib.pickthought.thoughts")
     local pickthought_info = PickThoughts.parse_href(href)
     if pickthought_info then
         if tostring(pickthought_info.book_id) ~= tostring(self._current_weread_book_id)

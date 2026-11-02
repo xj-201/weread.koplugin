@@ -12,7 +12,7 @@ local Http_ok, Http = pcall(require, "weread.pickthought.http")
 -- 但 bestbookmarks 只给热门划线 range,非热门段(却有想法)的 range 丢失,readreviews
 -- 按缺不全的 range 拉就漏大量想法(真机:118 章 bestbookmarks 1 划线,实际该章几十个 range)。
 -- 现恢复上游(weread/miuread)的 underlines 做法——该章所有划线,range 覆盖全。
-local logger = require("logger")
+local logger = require("weread.lib.logger")
 
 local WebFetch = {}
 WebFetch.__index = WebFetch

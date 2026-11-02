@@ -12,7 +12,7 @@
 --
 -- 两个列表的条目仍是标准想法 item 形状,因此长按评论仍走同一套
 -- _findItemAtContentY → 菜单逻辑(评论带自身 review_id 时可继续下钻)。
-local RC = require("weread.pickthought.review_comments")
+local RC = require("weread.lib.pickthought.review_comments")
 local sanitize_meta = RC.sanitize_meta
 
 local M = {}

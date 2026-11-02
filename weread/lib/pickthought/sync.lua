@@ -15,14 +15,14 @@
 --   inject(src, book_id, mapped_chapters, dest) → stats, err(epub_inject.inject_copy)
 --   progress(phase, i, n, text, book_id, metrics) → 返回 false 表示取消(可选)
 --   file_exists/rename/remove(可选,默认真实文件系统)
-local Binding = require("weread.pickthought.binding")
-local ChapterMap = require("weread.pickthought.chapter_map")
-local EpubInject = require("weread.pickthought.epub_inject")
-local Json = require("weread.pickthought.json")
-local SpineCache = require("weread.pickthought.spine_cache")
-local U = require("weread.pickthought.util")
-local SyncBudget = require("weread.pickthought.sync_budget")
-local logger = require("logger")
+local Binding = require("weread.lib.pickthought.binding")
+local ChapterMap = require("weread.lib.pickthought.chapter_map")
+local EpubInject = require("weread.lib.pickthought.epub_inject")
+local Json = require("weread.lib.pickthought.json")
+local SpineCache = require("weread.lib.pickthought.spine_cache")
+local U = require("weread.lib.pickthought.util")
+local SyncBudget = require("weread.lib.pickthought.sync_budget")
+local logger = require("weread.lib.logger")
 
 local Sync = {}
 

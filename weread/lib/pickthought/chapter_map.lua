@@ -6,7 +6,7 @@
 -- 先建立本地章节边界,只在对应边界内做引文投票;没有可靠章节结构时才回退
 -- 到整文件扫描。这样不会改变无结构 EPUB 的兼容性,也不会让同一文件内
 -- 不同章节的重复引文互相投票。
-local logger = require("logger")
+local logger = require("weread.lib.logger")
 
 local ChapterMap = {}
 

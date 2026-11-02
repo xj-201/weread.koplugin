@@ -22,8 +22,8 @@ prefilling fallbacks short-circuits font.lua's name-based resolution
 local FontList = require("fontlist")
 local Font = require("ui/font")
 local Freetype = require("ffi/freetype")
-local logger = require("logger")
-local PopupDiagnostic = require("weread.pickthought.diagnostic")
+local logger = require("weread.lib.logger")
+local PopupDiagnostic = require("weread.lib.pickthought.diagnostic")
 
 local FaceFactory = {
     initialized = false,

@@ -21,13 +21,13 @@ when the content or geometry key changes.
 local Blitbuffer = require("ffi/blitbuffer")
 local Cache = require("cache")
 local CacheItem = require("cacheitem")
-local ContentBuilder = require("weread.pickthought.thought_popup.content_builder")
+local ContentBuilder = require("weread.ui.pickthought.thought_popup.content_builder")
 local Device = require("device")
-local FaceFactory = require("weread.pickthought.thought_popup.face_factory")
-local Paginator = require("weread.pickthought.thought_popup.paginator")
+local FaceFactory = require("weread.ui.pickthought.thought_popup.face_factory")
+local Paginator = require("weread.ui.pickthought.thought_popup.paginator")
 local Screen = Device.screen
-local logger = require("logger")
-local PopupDiagnostic = require("weread.pickthought.diagnostic")
+local logger = require("weread.lib.logger")
+local PopupDiagnostic = require("weread.lib.pickthought.diagnostic")
 
 local PAGE_BB_CACHE_MAX = 8
 local PIECE_CACHE_MAX = 200

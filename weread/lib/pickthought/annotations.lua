@@ -1,10 +1,10 @@
-local logger = require("logger")
-local Thoughts = require("weread.pickthought.thoughts")
+local logger = require("weread.lib.logger")
+local Thoughts = require("weread.lib.pickthought.thoughts")
 
 local Annotations = {}
 Annotations.__index = Annotations
 
-local AnnotationStyle = require("weread.pickthought.annotation_style")
+local AnnotationStyle = require("weread.lib.pickthought.annotation_style")
 local CSS = AnnotationStyle.CSS
 
 local function str(v) return v == nil and "" or tostring(v) end

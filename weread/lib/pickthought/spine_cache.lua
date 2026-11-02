@@ -14,8 +14,8 @@
 -- 匹配逻辑,也不需要改动 ALGO_VERSION。缓存指纹与 map.json 同源(源书大小 @
 -- 算法版本),换书或升算法自动整体作废。manifest 还记录每个正文的大小和完整
 -- 内容指纹,旧格式或正文损坏时按冷缓存重建/回源。
-local U = require("weread.pickthought.util")
-local Json = require("weread.pickthought.json")
+local U = require("weread.lib.pickthought.util")
+local Json = require("weread.lib.pickthought.json")
 
 local SpineCache = {}
 

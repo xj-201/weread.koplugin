@@ -95,7 +95,7 @@ function M:startPickThoughtInjection(options)
     -- BackgroundWorker uses fork on Linux. SQLite connections opened by the
     -- reader process must not be inherited and then reused across the fork: close
     -- PickThought per-book handles first; the child will open its own connections.
-    require("weread.pickthought.thoughts").clear_memory_cache()
+    require("weread.lib.pickthought.thoughts").clear_memory_cache()
 
     local Dialog = require("weread.ui.download_dialog")
     local dialog = Dialog:new{
@@ -114,7 +114,7 @@ function M:startPickThoughtInjection(options)
     dialog:show()
     self._pickthought_dialog = dialog
 
-    local Runner = require("weread.pickthought.sync_runner")
+    local Runner = require("weread.lib.pickthought.sync_runner")
     local request
     local start_returned = false
     local ok, result = worker:start{
@@ -192,7 +192,7 @@ end
 
 function M:_pickThoughtStore()
     if not self._pickthought_store then
-        local Adapter = require("weread.pickthought.weread_adapter")
+        local Adapter = require("weread.lib.pickthought.weread_adapter")
         self._pickthought_store = Adapter:new(self)
     end
     return self._pickthought_store
@@ -234,9 +234,9 @@ function M:_viewPickThoughtComments(book_id, item, popup, request_token)
             and popup._comment_request_token == request_token
     end
     local review_id = tostring(item and item.review_id or "")
-    local ReviewComments = require("weread.pickthought.review_comments")
-    local Json = require("weread.pickthought.json")
-    local U = require("weread.pickthought.util")
+    local ReviewComments = require("weread.lib.pickthought.review_comments")
+    local Json = require("weread.lib.pickthought.json")
+    local U = require("weread.lib.pickthought.util")
     if review_id == "" then
         return {ok = false, error = "invalid_review_id",
             message = ReviewComments.message_for("invalid_review_id")}
@@ -476,9 +476,9 @@ function M:_prefetchPickThoughtCommentCounts(popup, book_id)
         connected = require("ui/network/manager"):isConnected() == true
     end)
     local store = self:_pickThoughtStore()
-    local ReviewComments = require("weread.pickthought.review_comments")
-    local Json = require("weread.pickthought.json")
-    local U = require("weread.pickthought.util")
+    local ReviewComments = require("weread.lib.pickthought.review_comments")
+    local Json = require("weread.lib.pickthought.json")
+    local U = require("weread.lib.pickthought.util")
     local cache = ReviewComments.Cache.new{
         path = store:book_dir(book_id) .. "/review_comments.db",
     }

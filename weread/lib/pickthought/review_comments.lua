@@ -7,9 +7,9 @@
 --   * Cache:review_comments.db 每本本地书一个文件,不混 thoughts.db,
 --     便于重置书籍时整文件删除;只在用户点击"查看评论"时打开、用完即关,
 --     不保留常驻连接,内存中不留评论 LRU。
-local Json = require("weread.pickthought.json")
-local logger = require("logger")
-local Util = require("weread.pickthought.util")
+local Json = require("weread.lib.pickthought.json")
+local logger = require("weread.lib.logger")
+local Util = require("weread.lib.pickthought.util")
 
 local M = {}
 

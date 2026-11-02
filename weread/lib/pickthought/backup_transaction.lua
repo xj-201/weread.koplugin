@@ -1,7 +1,7 @@
 -- PickThought EPUB file transaction layer.
 -- Not wired into sync.lua until fault-injection specs cover recovery behavior.
-local U = require("weread.pickthought.util")
-local Json = require("weread.pickthought.json")
+local U = require("weread.lib.pickthought.util")
+local Json = require("weread.lib.pickthought.json")
 local lfs = require("libs/libkoreader-lfs")
 local Transaction = {}
 Transaction.__index = Transaction

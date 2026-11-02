@@ -1,13 +1,13 @@
 -- PickThought 同步执行器：网络、章节映射和 EPUB 注入统一复用 WeRead Client。
 -- 由 BackgroundWorker 子进程调用；本模块不直接操作 KOReader UI。
-local Adapter = require("weread.pickthought.weread_adapter")
-local EpubReader = require("weread.pickthought.epub_reader")
-local EpubInject = require("weread.pickthought.epub_inject")
-local Json = require("weread.pickthought.json")
-local Sync = require("weread.pickthought.sync")
-local SyncBudget = require("weread.pickthought.sync_budget")
-local Thoughts = require("weread.pickthought.thoughts")
-local U = require("weread.pickthought.util")
+local Adapter = require("weread.lib.pickthought.weread_adapter")
+local EpubReader = require("weread.lib.pickthought.epub_reader")
+local EpubInject = require("weread.lib.pickthought.epub_inject")
+local Json = require("weread.lib.pickthought.json")
+local Sync = require("weread.lib.pickthought.sync")
+local SyncBudget = require("weread.lib.pickthought.sync_budget")
+local Thoughts = require("weread.lib.pickthought.thoughts")
+local U = require("weread.lib.pickthought.util")
 
 local Runner = {}
 

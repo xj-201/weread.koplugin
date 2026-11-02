@@ -4,12 +4,12 @@
 -- 锚点格式 pickthought-{hex(book)}.{hex(chap)}.{hex(range)} 与注入侧(epub_inject)
 -- 共用,不变:已注入的书不因存储后端切换而失效。
 -- 旧版按章存 thoughts/{uid}.json,首次打开某书数据库时一次性迁移并删旧目录。
-local Json = require("weread.pickthought.json")  -- 仅迁移旧 JSON 用
-local U = require("weread.pickthought.util")
-local ThoughtDB = require("weread.pickthought.thought_db")
-local logger = require("logger")
+local Json = require("weread.lib.pickthought.json")  -- 仅迁移旧 JSON 用
+local U = require("weread.lib.pickthought.util")
+local ThoughtDB = require("weread.lib.pickthought.thought_db")
+local logger = require("weread.lib.logger")
 local lfs = require("libs/libkoreader-lfs")
-local PopupDiagnostic = require("weread.pickthought.diagnostic")
+local PopupDiagnostic = require("weread.lib.pickthought.diagnostic")
 
 local Thoughts = {}
 

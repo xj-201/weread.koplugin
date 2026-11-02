@@ -4,11 +4,11 @@
 -- chapters 契约(Task 5/6 供数):数组,每项
 --   {chapter_uid=..., href=...(zip 全路径/相对 OPF 路径/纯文件名,依次精确、resolve、后缀匹配),
 --    underlines={{range="a-b", markText=...}, ...}, review_map={[range]={{content,author,...}}}}
-local Annotations = require("weread.pickthought.annotations")
-local AnnotationStyle = require("weread.pickthought.annotation_style")
-local EpubReader = require("weread.pickthought.epub_reader")
-local Json = require("weread.pickthought.json")
-local U = require("weread.pickthought.util")
+local Annotations = require("weread.lib.pickthought.annotations")
+local AnnotationStyle = require("weread.lib.pickthought.annotation_style")
+local EpubReader = require("weread.lib.pickthought.epub_reader")
+local Json = require("weread.lib.pickthought.json")
+local U = require("weread.lib.pickthought.util")
 local lfs = require("libs/libkoreader-lfs")
 
 -- 候选名包含进程内序号、高分辨率时钟和随机数,并用 mkdir 原子占位防止跨进程撞名。
@@ -32,8 +32,8 @@ local function reserve_temp_paths(dest, now, unique_seed)
     end
     return nil, nil, nil, "多次尝试后仍无法取得唯一 EPUB 临时路径"
 end
-local logger = require("logger")
-local PerformanceMode = require("weread.pickthought.performance_mode")
+local logger = require("weread.lib.logger")
+local PerformanceMode = require("weread.lib.pickthought.performance_mode")
 
 local M = {}
 

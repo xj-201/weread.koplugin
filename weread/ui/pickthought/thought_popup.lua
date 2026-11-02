@@ -19,9 +19,9 @@ same thought rebuilds nothing.
 @module pickthought.thought_popup
 --]]
 
-local FaceFactory = require("weread.pickthought.thought_popup.face_factory")
+local FaceFactory = require("weread.ui.pickthought.thought_popup.face_factory")
 local UIManager = require("ui/uimanager")
-local PopupDiagnostic = require("weread.pickthought.diagnostic")
+local PopupDiagnostic = require("weread.lib.pickthought.diagnostic")
 
 FaceFactory:init()
 
@@ -36,9 +36,9 @@ end
 --- loaded without instantiating UI (and so tests can mock either widget).
 local function widgetClassFor(position)
     if position == "center" then
-        return require("weread.pickthought.thought_popup.center_widget")
+        return require("weread.ui.pickthought.thought_popup.center_widget")
     end
-    return require("weread.pickthought.thought_popup.widget")
+    return require("weread.ui.pickthought.thought_popup.widget")
 end
 
 --- Show (or reopen the pooled instance for the position) a thought popup.

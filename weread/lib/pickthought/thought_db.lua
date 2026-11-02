@@ -7,9 +7,9 @@
 -- (groups → {range, texts},texts 元素同 web_fetch.build_reviews 输出)。
 -- 合并语义不放在本层(纯函数在 thoughts.merge_rows),ThoughtDB 只做
 -- open/close/put_chapter/put_range/get_range/delete_range/remove_db。
-local logger = require("logger")
-local U = require("weread.pickthought.util")
-local PopupDiagnostic = require("weread.pickthought.diagnostic")
+local logger = require("weread.lib.logger")
+local U = require("weread.lib.pickthought.util")
+local PopupDiagnostic = require("weread.lib.pickthought.diagnostic")
 
 local ThoughtDB = {}
 

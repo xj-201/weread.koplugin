@@ -1,7 +1,7 @@
 -- WeRead Client 适配层：PickThought 不创建第二套 HTTP、Cookie 或登录会话。
 -- 所有请求都通过主插件 self.client，确保沿用 WeRead 已保存的登录态。
 local Content = require("weread.lib.content")
-local WebFetch = require("weread.pickthought.web_fetch")
+local WebFetch = require("weread.lib.pickthought.web_fetch")
 
 local Adapter = {}
 Adapter.__index = Adapter
