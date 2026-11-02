@@ -198,7 +198,13 @@ local function comment_error_kind(err)
     return "invalid_response"
 end
 
-function M:_viewPickThoughtComments(book_id, item, popup)
+function M:_viewPickThoughtComments(book_id, item, popup, request_token)
+    local popup_generation = popup and popup._popup_generation
+    local function request_is_current()
+        if not popup then return false end
+        return popup._popup_generation == popup_generation
+            and popup._comment_request_token == request_token
+    end
     local review_id = tostring(item and item.review_id or "")
     local ReviewComments = require("weread.pickthought.review_comments")
     local Json = require("weread.pickthought.json")
@@ -275,14 +281,14 @@ function M:_viewPickThoughtComments(book_id, item, popup)
             local ok_decode, result = pcall(Json.decode, raw or "")
             local shown = false
             pcall(function() shown = UIManager:isWidgetShown(popup) == true end)
-            if shown and ok_decode and type(result) == "table" then
+            if shown and request_is_current() and ok_decode and type(result) == "table" then
                 if result.ok then popup:_enterComments(item, result)
                 else popup:_showCommentNotice(result.message or ReviewComments.message_for("network")) end
             end
             return
         end
         if not U.file_exists("/proc/" .. tostring(pid)) then
-            if popup and popup._showCommentNotice then
+            if request_is_current() and popup._showCommentNotice then
                 popup:_showCommentNotice(ReviewComments.message_for("network"))
             end
             return
@@ -294,7 +300,7 @@ function M:_viewPickThoughtComments(book_id, item, popup)
                 pcall(FFIUtil.terminateSubProcess, pid)
             end
             os.remove(result_path)
-            if popup and popup._showCommentNotice then
+            if request_is_current() and popup._showCommentNotice then
                 popup:_showCommentNotice(ReviewComments.message_for("network"))
             end
             return
@@ -323,6 +329,10 @@ function M:_prefetchPickThoughtCommentCounts(popup, book_id)
         path = store:book_dir(book_id) .. "/review_comments.db",
     }
     local ttl = ReviewComments.DEFAULT_TTL_SECONDS
+    local popup_generation = popup._popup_generation
+    local function popup_is_current()
+        return popup._popup_generation == popup_generation
+    end
     local visible = popup:visible_thought_items()
     local pending, changed = {}, false
     for _, item in ipairs(visible) do
@@ -402,7 +412,7 @@ function M:_prefetchPickThoughtCommentCounts(popup, book_id)
             local decoded_ok, results = pcall(Json.decode, raw or "")
             local still_shown = false
             pcall(function() still_shown = UIManager:isWidgetShown(popup) == true end)
-            if still_shown and decoded_ok and type(results) == "table" then
+            if still_shown and popup_is_current() and decoded_ok and type(results) == "table" then
                 local counts = {}
                 for _, row in ipairs(results) do
                     counts[tostring(row.review_id)] = tonumber(row.total_count) or 0
