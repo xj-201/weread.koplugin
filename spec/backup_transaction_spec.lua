@@ -399,4 +399,38 @@ do
     expect(fs.read("/books/m.epub") == "INJECTED-v1", "invalid root manifest must not change current EPUB")
 end
 
+-- Operation labels must agree with baseline semantics: initial always
+-- creates a baseline, append never changes it, and rebuild always supplies one.
+do
+    local fs = new_fs()
+    fs.write("/books/n.epub", "CLEAN-n")
+    fs.write("/books/candidate.epub", "INJECTED-n")
+    local tx = harness(fs, "invalid-operation")
+    local initial, initial_err = tx:commit{
+        root = "/books/n.epub.pickthought", doc_path = "/books/n.epub",
+        candidate_path = "/books/candidate.epub", operation = "initial",
+    }
+    expect(not initial and tostring(initial_err):match("must install a clean baseline"),
+        "initial without a baseline must be rejected")
+    expect(fs.read("/books/n.epub") == "CLEAN-n", "invalid initial operation leaves current unchanged")
+
+    fs.write("/books/n.epub.pickthought/original.epub", "CLEAN-old")
+    fs.write("/books/new-clean.epub", "CLEAN-new")
+    local append, append_err = tx:commit{
+        root = "/books/n.epub.pickthought", doc_path = "/books/n.epub",
+        candidate_path = "/books/candidate.epub",
+        original_path = "/books/n.epub.pickthought/original.epub",
+        new_original_path = "/books/new-clean.epub", operation = "append",
+    }
+    expect(not append and tostring(append_err):match("must not replace the clean baseline"),
+        "append must not change the clean baseline")
+    local rebuild, rebuild_err = tx:commit{
+        root = "/books/n.epub.pickthought", doc_path = "/books/n.epub",
+        candidate_path = "/books/candidate.epub", operation = "rebuild",
+    }
+    expect(not rebuild and tostring(rebuild_err):match("must provide a new clean baseline"),
+        "rebuild without a new baseline must be rejected")
+    expect(fs.read("/books/n.epub") == "CLEAN-n", "invalid operation labels leave current unchanged")
+end
+
 print("backup_transaction_spec: " .. checks .. " checks passed")
