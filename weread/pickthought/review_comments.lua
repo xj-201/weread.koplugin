@@ -267,19 +267,29 @@ local function ensure_schema(db)
     if not ok then return false end
     -- 兼容已有缓存库:只补充请求版本列,不重建表、不删除缓存数据。
     local migration_ok = pcall(function()
-        local columns = db:prepare("PRAGMA table_info(review_comment_cache)")
-        local has_request_version = false
-        while true do
-            local row = columns:step()
-            if type(row) ~= "table" then break end
-            if tostring(row[2] or "") == "request_version" then
-                has_request_version = true
+        local function has_request_version_column()
+            local columns = db:prepare("PRAGMA table_info(review_comment_cache)")
+            local found = false
+            while true do
+                local row = columns:step()
+                if type(row) ~= "table" then break end
+                if tostring(row[2] or "") == "request_version" then
+                    found = true
+                end
             end
+            columns:close()
+            return found
         end
-        columns:close()
-        if not has_request_version then
-            db:exec([[ALTER TABLE review_comment_cache
-                ADD COLUMN request_version INTEGER NOT NULL DEFAULT 0]])
+        if not has_request_version_column() then
+            -- Another worker may complete this migration between the check and
+            -- ALTER. Re-check after an ALTER error to distinguish that race.
+            local alter_ok = pcall(function()
+                db:exec([[ALTER TABLE review_comment_cache
+                    ADD COLUMN request_version INTEGER NOT NULL DEFAULT 0]])
+            end)
+            if not alter_ok and not has_request_version_column() then
+                error("request_version schema migration failed")
+            end
         end
     end)
     if not migration_ok then return false end
@@ -366,6 +376,35 @@ function Cache:get(review_id, now)
         return nil
     end
     return record
+end
+
+--- 记录请求启动版本。即使新请求失败，也阻止更早启动的 worker
+--- 在之后完成时写入旧结果。占位行 payload 为空且 expires_at=0，不会被读取或计入评论数。
+function Cache:mark_request(review_id, book_id, request_version, now)
+    review_id = trim(tostring(review_id or ""))
+    request_version = tonumber(request_version)
+    now = tonumber(now) or os.time()
+    if review_id == "" or not request_version then return false end
+    local db = self:_open()
+    if not db then return false end
+    local ok, err = pcall(function()
+        local stmt = db:prepare([[INSERT INTO review_comment_cache
+            (review_id, book_id, total_count, payload_json, fetched_at, last_access_at,
+                expires_at, request_version)
+            VALUES (?, ?, 0, '', 0, 0, 0, ?)
+            ON CONFLICT(review_id) DO UPDATE SET
+                request_version=excluded.request_version
+            WHERE excluded.request_version > review_comment_cache.request_version]])
+        stmt:reset():bind(review_id, tostring(book_id or ""), request_version)
+        stmt:step()
+        stmt:close()
+    end)
+    close_db(db)
+    if not ok then
+        logger.warn("[撷思][ReviewComments] 请求版本登记失败:", query_error("登记", err))
+        return false
+    end
+    return true
 end
 
 --- 写入缓存;仅允许不早于库中版本的请求覆盖同一 review_id。
@@ -465,7 +504,10 @@ function M.cache_get(cache, review_id, loader, book_id, now, ttl, request_versio
     if review_id == "" then
         return { ok = false, error = "invalid_review_id", message = MESSAGE.invalid_review_id }
     end
+    local cache_request_registered = false
     if cache and ttl > 0 then
+        cache_request_registered = cache:mark_request(
+            review_id, book_id, request_version, now) == true
         local record = cache:get(review_id, now)
         if record then
             record.ok = true
@@ -479,7 +521,7 @@ function M.cache_get(cache, review_id, loader, book_id, now, ttl, request_versio
         -- 过期行视为未命中;刷新失败不降级展示旧评论。
         return result
     end
-    if cache and ttl > 0 then
+    if cache and ttl > 0 and cache_request_registered then
         cache:put(review_id, book_id, result, now, ttl, request_version)
     end
     return result
