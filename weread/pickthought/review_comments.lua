@@ -129,15 +129,26 @@ local function extract_comments(data)
 end
 
 local function extract_total(data, items)
-    local candidates = {
-        data.commentsCount, data.total, data.totalCount,
-        type(data.review) == "table" and data.review.commentsCount or nil,
-        type(data.data) == "table" and data.data.commentsCount or nil,
-    }
-    for _, candidate in ipairs(candidates) do
-        local value = tonumber(candidate)
-        if value and value >= 0 then return value end
+    -- Do not build a sparse Lua array here: ipairs stops at the first nil,
+    -- so a response containing total/totalCount but no commentsCount would
+    -- incorrectly fall back to the number of comments included in this page.
+    local function non_negative(value)
+        value = tonumber(value)
+        if value ~= nil and value >= 0 then return value end
     end
+    local value = non_negative(data.commentsCount)
+        or non_negative(data.total)
+        or non_negative(data.totalCount)
+    if value ~= nil then return value end
+
+    local review = type(data.review) == "table" and data.review or nil
+    value = review and non_negative(review.commentsCount)
+    if value ~= nil then return value end
+
+    local inner = type(data.data) == "table" and data.data or nil
+    value = inner and non_negative(inner.commentsCount)
+    if value ~= nil then return value end
+
     return #items
 end
 
