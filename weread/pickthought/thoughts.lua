@@ -371,6 +371,73 @@ function Thoughts.merge(store, book_id, chapter_uid, from_range, into_range)
     return true
 end
 
+-- 同一书籍/章节的多条范围合并在一个 SQLite 事务中提交。
+-- 来源范围始终保留,以便 EPUB 换位失败时旧锚点仍可读取原想法。
+function Thoughts.merge_many(store, book_id, chapter_uid, merges)
+    local db = open_db(store, book_id, true)
+    if not db then return false end
+    local uid = tostring(chapter_uid or "")
+    local range_cache, replacement_order, replacement_seen = {}, {}, {}
+
+    local function load_range(range)
+        if range_cache[range] ~= nil then return range_cache[range] end
+        local texts, query_err = ThoughtDB.get_range(db, uid, range)
+        if not texts then
+            discard_cached_db(store:book_dir(book_id), db)
+            logger.warn("[撷思][Thoughts] batch merge query failed",
+                "book=", tostring(book_id), "chapter=", uid,
+                "range=", range, "error=", tostring(query_err))
+            return nil, query_err
+        end
+        range_cache[range] = texts
+        return texts
+    end
+
+    for _, merge in ipairs(merges or {}) do
+        local from_range = tostring(merge.from or "")
+        local into_range = tostring(merge.into or "")
+        if from_range == "" or into_range == "" or from_range == into_range then
+            return false
+        end
+        local from_texts, from_err = load_range(from_range)
+        if not from_texts then return false, from_err end
+        -- 无来源想法是正常 no-op。
+        if #from_texts > 0 then
+            local into_texts, into_err = load_range(into_range)
+            if not into_texts then return false, into_err end
+            local rows = {
+                { range = from_range, texts = from_texts },
+                { range = into_range, texts = into_texts },
+            }
+            Thoughts.merge_rows(rows, from_range, into_range)
+            local merged_texts = (#into_texts > 0) and rows[2].texts or rows[1].texts
+            range_cache[into_range] = merged_texts
+            if not replacement_seen[into_range] then
+                replacement_seen[into_range] = true
+                replacement_order[#replacement_order + 1] = into_range
+            end
+        end
+    end
+
+    local replacements = {}
+    for _, range in ipairs(replacement_order) do
+        replacements[#replacements + 1] = {
+            range = range, texts = range_cache[range] or {},
+        }
+    end
+    if #replacements == 0 then return true end
+    if not ThoughtDB.put_ranges(db, uid, replacements) then
+        logger.warn("[撷思][Thoughts] batch merge write failed",
+            "book=", tostring(book_id), "chapter=", uid,
+            "ranges=", tostring(#replacements))
+        return false
+    end
+    logger.info("[撷思][Thoughts] batch merged ranges retained for EPUB rollback safety",
+        "book=", tostring(book_id), "chapter=", uid,
+        "merges=", tostring(#merges), "targets=", tostring(#replacements))
+    return true
+end
+
 function Thoughts.find(store, book_id, chapter_uid, range)
     local started = PopupDiagnostic.now()
     local db, dberr = open_db(store, book_id, false)
