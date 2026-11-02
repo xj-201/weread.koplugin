@@ -376,15 +376,21 @@ function M:_viewPickThoughtComments(book_id, item, popup, request_token)
         if U.file_exists(result_path) then
             local raw = U.read_file(result_path, true)
             os.remove(result_path)
-            if self._pickthought_comment_request_pids then
-                self._pickthought_comment_request_pids[pid] = nil
-            end
             local ok_decode, result = pcall(Json.decode, raw or "")
             local shown = false
             pcall(function() shown = UIManager:isWidgetShown(popup) == true end)
             if shown and request_is_current() and ok_decode and type(result) == "table" then
                 if result.ok then popup:_enterComments(item, result)
                 else popup:_showCommentNotice(result.message or ReviewComments.message_for("network")) end
+            end
+            -- Keep the PID tracked until the child has actually exited; cleanup
+            -- may still need to terminate it during a document transition.
+            if U.file_exists("/proc/" .. tostring(pid)) then
+                UIManager:scheduleIn(0.1, poll)
+                return
+            end
+            if self._pickthought_comment_request_pids then
+                self._pickthought_comment_request_pids[pid] = nil
             end
             return
         end
@@ -398,12 +404,18 @@ function M:_viewPickThoughtComments(book_id, item, popup, request_token)
             return
         end
         if os.time() >= deadline then
-            -- 超时后必须终止子进程并结束轮询；原逻辑会每 5 秒永久轮询，
-            -- 让弹窗一直停留在"正在加载评论…"。
+            -- 超时后请求终止，但保留 PID 跟踪，直到进程真正退出。
             if type(FFIUtil.terminateSubProcess) == "function" then
                 pcall(FFIUtil.terminateSubProcess, pid)
             end
             os.remove(result_path)
+            if U.file_exists("/proc/" .. tostring(pid)) then
+                if request_is_current() and popup._showCommentNotice then
+                    popup:_showCommentNotice(ReviewComments.message_for("network"))
+                end
+                UIManager:scheduleIn(0.5, poll)
+                return
+            end
             if self._pickthought_comment_request_pids then
                 self._pickthought_comment_request_pids[pid] = nil
             end
