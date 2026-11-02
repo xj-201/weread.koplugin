@@ -187,8 +187,15 @@ function M.normalize_response(data, requested_review_id)
     local raw = extract_comments(data)
     if raw == nil then
         if type(data.review) == "table" then
-            return { ok = true, items = {}, total_count = 0, truncated = false,
-                review_id = trim(tostring(requested_review_id or "")) }
+            local total = extract_total(data, {})
+            return {
+                ok = true,
+                items = {},
+                total_count = total,
+                raw_count = 0,
+                truncated = total > 0,
+                review_id = trim(tostring(requested_review_id or "")),
+            }
         end
         return { ok = false, error = "invalid_response", message = MESSAGE.invalid_response }
     end
