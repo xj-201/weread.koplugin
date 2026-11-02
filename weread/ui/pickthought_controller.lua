@@ -23,7 +23,7 @@ function M:getPickThoughtMenuItems()
     end
     return {
         {
-            text = _("Generate PickThought EPUB copy"),
+            text = _("Inject PickThought into this EPUB"),
             callback = function()
                 self:startPickThoughtInjection()
             end,
@@ -84,7 +84,7 @@ function M:startPickThoughtInjection(options)
     local Dialog = require("weread.ui.download_dialog")
     local dialog = Dialog:new{
         title = _("Preparing PickThought injection"),
-        description = _("The original EPUB will be retained as the clean source. You can pause the task."),
+        description = _("The current EPUB will be replaced by the injected version. The clean original is retained as a .orig backup. You can pause the task."),
         progress_max = 100,
         buttons = { { {
             text = _("Pause"),
