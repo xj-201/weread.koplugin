@@ -18,7 +18,7 @@ local function clone(value)
 end
 
 local function new_fs()
-    local fs = { files = {}, dirs = { ["/"] = true }, fail_rename = nil }
+    local fs = { files = {}, dirs = { ["/"] = true }, fail_rename = nil, fail_write = nil, write_count = 0 }
     local function parent(path) return path:match("^(.*)/[^/]+$") or "/" end
     local function ensure_dir(path)
         if fs.dirs[path] then return true end
@@ -32,6 +32,10 @@ local function new_fs()
     function fs.dir_exists(path) return fs.dirs[path] == true end
     function fs.read(path) return fs.files[path] end
     function fs.write(path, data)
+        fs.write_count = fs.write_count + 1
+        if fs.fail_write and fs.fail_write(path, data, fs.write_count) then
+            return nil, "injected manifest write failure"
+        end
         ensure_dir(parent(path))
         fs.files[path] = data
         return true
@@ -294,6 +298,33 @@ do
     expect(fs.read("/books/i.epub") == "USER-EDITED", "conflicting current file preserved")
     expect(fs.read(root .. "/transactions/recover-conflict/previous-current.epub") == "INJECTED-before",
         "previous current preserved when destination conflicts")
+end
+
+
+-- If the post-install checkpoint cannot be written, the already persisted
+-- installing_candidate state and fingerprints are sufficient to roll back.
+do
+    local fs = new_fs()
+    fs.write("/books/j.epub", "INJECTED-v1")
+    fs.write("/books/candidate.epub", "INJECTED-v2")
+    local tx_manifest_writes = 0
+    fs.fail_write = function(path)
+        if path:match("/transaction%.json$") then
+            tx_manifest_writes = tx_manifest_writes + 1
+            return tx_manifest_writes == 7
+        end
+        return false
+    end
+    local tx = harness(fs, "manifest-failure")
+    local result, err = tx:commit{
+        root = "/books/j.epub.pickthought", doc_path = "/books/j.epub",
+        candidate_path = "/books/candidate.epub",
+    }
+    expect(not result and tostring(err):match("previous files restored"),
+        "checkpoint write failure should roll back: " .. tostring(err))
+    expect(fs.read("/books/j.epub") == "INJECTED-v1", "old current restored after checkpoint failure")
+    local recovered, recovery_message = tx:recover("/books/j.epub.pickthought")
+    expect(recovered == true, "recovery after rollback should be idempotent: " .. tostring(recovery_message))
 end
 
 print("backup_transaction_spec: " .. checks .. " checks passed")
