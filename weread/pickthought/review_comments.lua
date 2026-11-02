@@ -389,7 +389,7 @@ end
 
 --- 记录请求启动版本。即使新请求失败，也阻止更早启动的 worker
 --- 在之后完成时写入旧结果。版本单独存表，不污染评论缓存数据。
-function Cache:mark_request(review_id, book_id, request_version, now)
+function Cache:mark_request(review_id, request_version, now)
     review_id = trim(tostring(review_id or ""))
     request_version = tonumber(request_version)
     now = tonumber(now) or os.time()
@@ -532,7 +532,7 @@ function M.cache_get(cache, review_id, loader, book_id, now, ttl, request_versio
     local cache_request_registered = false
     if cache and ttl > 0 then
         cache_request_registered = cache:mark_request(
-            review_id, book_id, request_version, now) == true
+            review_id, request_version, now) == true
         local record = cache:get(review_id, now)
         if record then
             record.ok = true
