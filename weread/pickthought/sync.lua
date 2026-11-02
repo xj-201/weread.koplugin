@@ -1363,15 +1363,21 @@ function Sync.run(deps)
                 -- 否则连续两次 clean_source 重建会销毁用户最初的干净原书。跳过清理,
                 -- 交由下方 is_current_injected 分支改名 .old.kept 保留。
                 local old_meta_ok, old_meta = pcall(function() return deps.load_meta(old_path) end)
-                if old_meta_ok and old_meta and old_meta.has and old_meta.has[EpubInject.MARKER] ~= true then
-                    -- 保留的原始干净书:不在此清理,留待后续分支处理。
+                if not old_meta_ok or not old_meta then
+                    -- 无法解析的 .old 可能是唯一可恢复副本;不能把"无法识别"
+                    -- 当成"可删除的旧注入版"。保留文件并停止本次重建。
+                    remove(temp_dest)
+                    return nil, "暂存文件 " .. old_path
+                        .. " 无法解析,已保留且中止操作;请先人工确认或恢复该文件"
+                elseif not (old_meta.has and old_meta.has[EpubInject.MARKER] == true) then
+                    -- 保留的原始干净书:不在此清理,留待下方分支处理。
                 else
                     local ok_rm, rm_err = remove(old_path)
                     if not ok_rm then
                         remove(temp_dest)
-                        return nil, "无法清理旧的暂存文件,请重试"
+                        return nil, "无法清理旧的注入暂存文件(" .. tostring(rm_err or old_path) .. "),请重试"
                     end
-                end
+                endd
             end
         end
         -- 安全前置(P1#3):确认当前 doc_path 确实是注入版;若当前仍是干净原书
