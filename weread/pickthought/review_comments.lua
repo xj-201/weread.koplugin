@@ -319,19 +319,13 @@ function Cache:get(review_id, now)
         local row = stmt:step()
         if type(row) == "table" then
             local decoded = Json.decode(tostring(row[2] or ""))
-            if type(decoded) == "table" then
-                local total = tonumber(row[1]) or #decoded
-                if total > #decoded then
-                    -- Older versions could cache a single prefetch page as if it
-                    -- were the complete comment list. Treat that row as stale.
-                    local discard = db:prepare(
-                        "DELETE FROM review_comment_cache WHERE review_id = ?")
-                    discard:reset():bind(review_id)
-                    discard:step()
-                    discard:close()
-                else
+            if type(decoded) == "table" and tonumber(decoded.version) == 2
+                and type(decoded.items) == "table" then
+                local items = decoded.items
+                local total = tonumber(row[1]) or #items
+                if total <= #items then
                     record = {
-                        items = decoded,
+                        items = items,
                         total_count = total,
                         fetched_at = tonumber(row[3]) or now,
                     }
@@ -341,6 +335,14 @@ function Cache:get(review_id, now)
                     touch:step()
                     touch:close()
                 end
+            end
+            if not record then
+                -- Invalidate legacy arrays and malformed/incomplete payloads.
+                local discard = db:prepare(
+                    "DELETE FROM review_comment_cache WHERE review_id = ?")
+                discard:reset():bind(review_id)
+                discard:step()
+                discard:close()
             end
         end
         stmt:close()
@@ -368,7 +370,7 @@ function Cache:put(review_id, book_id, result, now, ttl)
     local db = self:_open()
     if not db then return false end
     local ok, err = pcall(function()
-        local payload = Json.encode(result.items)
+        local payload = Json.encode({ version = 2, items = result.items })
         local upsert = db:prepare([[INSERT INTO review_comment_cache
             (review_id, book_id, total_count, payload_json, fetched_at, last_access_at, expires_at)
             VALUES (?, ?, ?, ?, ?, ?, ?)
