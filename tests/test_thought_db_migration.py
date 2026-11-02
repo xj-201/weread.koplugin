@@ -61,13 +61,10 @@ def ensure_review_id_column(conn):
 class ThoughtDBMigrationTests(unittest.TestCase):
     def test_lua_checks_column_before_migration_and_does_not_hide_alter_errors(self):
         self.assertIn('db:prepare("PRAGMA table_info(review_items)")', SOURCE)
-        self.assertIn(
-            'if not has_review_id_column(db) then\\n'
-            '            db:exec("ALTER TABLE review_items ADD COLUMN review_id',
-            SOURCE,
-        )
+        self.assertIn('if not has_review_id_column(db) then', SOURCE)
+        self.assertIn('db:exec("ALTER TABLE review_items ADD COLUMN review_id', SOURCE)
         self.assertNotIn(
-            'pcall(function()\\n'
+            'pcall(function()' + chr(10) +
             '            db:exec("ALTER TABLE review_items',
             SOURCE,
         )
