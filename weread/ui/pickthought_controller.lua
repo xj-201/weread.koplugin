@@ -389,6 +389,7 @@ function M:_prefetchPickThoughtCommentCounts(popup, book_id)
     local fork_ok, pid = pcall(FFIUtil.runInSubProcess, child, false, false)
     if not fork_ok or not pid then return end
     self._pickthought_comment_prefetch_pid = pid
+    local deadline = os.time() + 180
 
     local function poll()
         pcall(function() FFIUtil.isSubProcessDone(pid) end)
@@ -419,6 +420,16 @@ function M:_prefetchPickThoughtCommentCounts(popup, book_id)
             return
         end
         if not U.file_exists("/proc/" .. tostring(pid)) then
+            if self._pickthought_comment_prefetch_pid == pid then
+                self._pickthought_comment_prefetch_pid = nil
+            end
+            return
+        end
+        if os.time() >= deadline then
+            if type(FFIUtil.terminateSubProcess) == "function" then
+                pcall(FFIUtil.terminateSubProcess, pid)
+            end
+            os.remove(result_path)
             if self._pickthought_comment_prefetch_pid == pid then
                 self._pickthought_comment_prefetch_pid = nil
             end
