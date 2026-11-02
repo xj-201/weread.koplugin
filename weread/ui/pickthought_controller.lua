@@ -276,26 +276,122 @@ function M:_prefetchPickThoughtCommentCounts(popup, book_id)
     local shown = false
     pcall(function() shown = UIManager:isWidgetShown(popup) == true end)
     if not shown then return end
+    local connected = false
+    pcall(function()
+        connected = require("ui/network/manager"):isConnected() == true
+    end)
     local store = self:_pickThoughtStore()
     local ReviewComments = require("weread.pickthought.review_comments")
+    local Json = require("weread.pickthought.json")
+    local U = require("weread.pickthought.util")
     local cache = ReviewComments.Cache.new{
         path = store:book_dir(book_id) .. "/review_comments.db",
     }
-    local changed = false
-    for _, item in ipairs(popup:visible_thought_items()) do
-        local rid = tostring(item and item.review_id or "")
-        if rid ~= "" and (tonumber(item.comment_count) or 0) <= 0 then
-            local record = cache:get(rid, os.time())
+    local ttl = ReviewComments.DEFAULT_TTL_SECONDS
+    local visible = popup:visible_thought_items()
+    local pending, changed = {}, false
+    for _, item in ipairs(visible) do
+        local review_id = tostring(item and item.review_id or "")
+        if review_id ~= "" and (tonumber(item.comment_count) or 0) <= 0 then
+            local record = cache:get(review_id, os.time())
             if record then
                 local count = tonumber(record.total_count) or 0
                 if (tonumber(item.comment_count) or 0) ~= count then
                     item.comment_count = count
                     changed = true
                 end
+            elseif connected then
+                pending[#pending + 1] = item
             end
         end
     end
     if changed then popup:refresh_comment_counts() end
+    if #pending == 0 then return end
+
+    -- 只预取当前视口的评论数；请求在子进程串行执行，阅读器 UI 不被 HTTP 阻塞。
+    if self._pickthought_comment_prefetch_pid
+        and U.file_exists("/proc/" .. tostring(self._pickthought_comment_prefetch_pid)) then
+        return
+    end
+    local FFIUtil = require("ffi/util")
+    local result_dir = self.settings.data_dir .. "/pickthought-workers"
+    U.mkdir(result_dir)
+    local result_path = result_dir .. "/comment-counts-" .. tostring(os.time())
+        .. "-" .. tostring(math.random(100000, 999999)) .. ".json"
+    local ids = {}
+    for _, item in ipairs(pending) do ids[#ids + 1] = tostring(item.review_id) end
+    local child = function()
+        local child_ok, results = pcall(function()
+            local out = {}
+            for index, review_id in ipairs(ids) do
+                local result = ReviewComments.cache_get(cache, review_id, function()
+                    local ok, data, err = self.client:get_review_comments(review_id, 30)
+                    if not ok then
+                        local kind = comment_error_kind(err)
+                        return {ok = false, error = kind,
+                            message = ReviewComments.message_for(kind)}
+                    end
+                    return ReviewComments.normalize_response(data, review_id)
+                end, book_id, os.time(), ttl)
+                if type(result) == "table" and result.ok then
+                    out[#out + 1] = {
+                        review_id = review_id,
+                        total_count = tonumber(result.total_count) or 0,
+                    }
+                end
+                if index < #ids then
+                    local ok_socket, socket = pcall(require, "socket")
+                    if ok_socket and socket.sleep then socket.sleep(0.2) end
+                end
+            end
+            return out
+        end)
+        local encoded_ok, encoded = pcall(Json.encode,
+            child_ok and (results or {}) or {})
+        if encoded_ok then U.atomic_write(result_path, encoded, true) end
+        require("ffi").C._exit(0)
+    end
+    local fork_ok, pid = pcall(FFIUtil.runInSubProcess, child, false, false)
+    if not fork_ok or not pid then return end
+    self._pickthought_comment_prefetch_pid = pid
+
+    local function poll()
+        pcall(function() FFIUtil.isSubProcessDone(pid) end)
+        if U.file_exists(result_path) then
+            local raw = U.read_file(result_path, true)
+            os.remove(result_path)
+            if self._pickthought_comment_prefetch_pid == pid then
+                self._pickthought_comment_prefetch_pid = nil
+            end
+            local decoded_ok, results = pcall(Json.decode, raw or "")
+            local still_shown = false
+            pcall(function() still_shown = UIManager:isWidgetShown(popup) == true end)
+            if still_shown and decoded_ok and type(results) == "table" then
+                local counts = {}
+                for _, row in ipairs(results) do
+                    counts[tostring(row.review_id)] = tonumber(row.total_count) or 0
+                end
+                local updated = false
+                for _, item in ipairs(pending) do
+                    local count = counts[tostring(item.review_id)]
+                    if count ~= nil and (tonumber(item.comment_count) or 0) ~= count then
+                        item.comment_count = count
+                        updated = true
+                    end
+                end
+                if updated then popup:refresh_comment_counts() end
+            end
+            return
+        end
+        if not U.file_exists("/proc/" .. tostring(pid)) then
+            if self._pickthought_comment_prefetch_pid == pid then
+                self._pickthought_comment_prefetch_pid = nil
+            end
+            return
+        end
+        UIManager:scheduleIn(0.5, poll)
+    end
+    UIManager:scheduleIn(0.5, poll)
 end
 
 function M:cleanupPickThought()
