@@ -354,8 +354,18 @@ function Thoughts.merge(store, book_id, chapter_uid, from_range, into_range)
     Thoughts.merge_rows(rows, from_range, into_range)
     -- merge_rows 后:into 原有→rows[2].texts 是合并结果;into 原空→rows[1].range 被改成 into。
     local merged_texts = (#into_texts > 0) and rows[2].texts or rows[1].texts
-    ThoughtDB.put_range(db, uid, into_range, merged_texts)
-    ThoughtDB.delete_range(db, uid, from_range)
+    -- 先确认目标写入成功,再删除来源。若写入失败仍删来源会造成想法永久丢失；
+    -- 若删除失败最多留下重复源组,比丢数据安全,下次可再次合并。
+    if not ThoughtDB.put_range(db, uid, into_range, merged_texts) then
+        logger.warn("[撷思][Thoughts] merge target write failed",
+            "book=", tostring(book_id), "chapter=", uid)
+        return false
+    end
+    if not ThoughtDB.delete_range(db, uid, from_range) then
+        logger.warn("[撷思][Thoughts] merge source cleanup failed; duplicate data retained",
+            "book=", tostring(book_id), "chapter=", uid)
+        return false
+    end
     return true
 end
 
