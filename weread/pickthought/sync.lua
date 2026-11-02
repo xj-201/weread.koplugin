@@ -1731,7 +1731,7 @@ function Sync.run(deps)
             if not recovered then
                 local msg = "无法替换原书(" .. tostring(swap_err or "rename 失败") .. ")"
                 if file_exists(old_path) then
-                    msg = msg .. ";当前注入版暂存于 " .. old_path .. ",请手动恢复"
+                    msg = msg .. ";原书副本暂存于 " .. old_path .. ",请先确认文件版本后手动恢复"
                 elseif file_exists(backup) then
                     msg = msg .. ";干净原书备份位于 " .. backup .. ",请手动恢复"
                 end
