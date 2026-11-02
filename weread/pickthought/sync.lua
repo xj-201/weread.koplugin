@@ -1254,7 +1254,19 @@ function Sync.run(deps)
     -- 重叠划线被合并的,把想法并进存活锚点的组:点一个虚线看到这一段全部想法。
     if deps.merge_thoughts then
         for _, merge in ipairs(stats.merges or {}) do
-            pcall(deps.merge_thoughts, merge.book_id or book_ids[1], merge.uid, merge.from, merge.into)
+            local merge_ok, merged = pcall(deps.merge_thoughts,
+                merge.book_id or book_ids[1], merge.uid, merge.from, merge.into)
+            if not merge_ok or merged ~= true then
+                -- 想法数据库未能与新 EPUB 的合并锚点保持一致时,禁止替换当前书。
+                -- 已完成的前序 merge 具备幂等去重;保留旧 EPUB 与临时输出供重试/诊断。
+                remove(temp_dest)
+                local detail = merge_ok and "数据库合并返回失败" or tostring(merged)
+                logger.warn("[撷思][Sync] thought range merge failed",
+                    "book=", tostring(merge.book_id or book_ids[1]),
+                    "chapter=", tostring(merge.uid), "from=", tostring(merge.from),
+                    "into=", tostring(merge.into), "error=", detail)
+                return nil, "想法数据合并失败,已取消 EPUB 替换;请重试同步(" .. detail .. ")"
+            end
         end
     end
 
