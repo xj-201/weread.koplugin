@@ -1234,7 +1234,12 @@ function Sync.run(deps)
     end
     -- 注入到中间文件(无 .epub 后缀,不会闪现在书架),成功后原子换位。
     -- 多书时把所有绑定书的 mapped 章节合并进同一次注入,book_ids 一并列进 MARKER。
-    local temp_dest = doc_path .. ".pickthought-new"
+    -- BackgroundWorker token 在同一 Worker 实例内唯一;把它带入中间输出路径,
+    -- 避免旧 worker 尚未退出/异常残留时,新任务清理或换位到另一任务的产物。
+    local temp_suffix = tostring(deps.temp_suffix or (tostring(os.time()) .. "-"
+        .. tostring(math.random(100000, 999999)) .. "-" .. tostring({})))
+        :gsub("[^%w%-]", "")
+    local temp_dest = doc_path .. ".pickthought-new-" .. temp_suffix
     local stats, inject_err = deps.inject(src, book_ids[1], mapped, temp_dest,
         {append = append, meta = meta, book_ids = book_ids, progress = report_inject_progress})
     if not stats then
