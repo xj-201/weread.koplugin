@@ -160,6 +160,9 @@ function Runner.run(plugin, doc_path, book_id, worker_context, options)
         merge_thoughts = function(bid, uid, from_range, into_range)
             return Thoughts.merge(adapter, bid, uid, from_range, into_range)
         end,
+        merge_thoughts_batch = function(bid, uid, merges)
+            return Thoughts.merge_many(adapter, bid, uid, merges)
+        end,
         inject = function(src, bid, mapped, dest, inject_opts)
             return EpubInject.inject_copy(src, bid, mapped, {
                 dest = dest,
