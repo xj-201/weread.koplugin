@@ -48,6 +48,23 @@ local function cache_key(uid)
     return U.id_name(uid) .. ".json"
 end
 
+local function normalize_chapter_ids(chapters)
+    if type(chapters) ~= "table" then return nil end
+    local normalized = {}
+    for _, chapter in ipairs(chapters) do
+        if type(chapter) == "table" then
+            local uid = chapter.uid or chapter.chapterUid or chapter.chapter_uid
+            if uid ~= nil and tostring(uid) ~= "" then
+                local item = {}
+                for key, value in pairs(chapter) do item[key] = value end
+                item.uid = tostring(uid)
+                normalized[#normalized + 1] = item
+            end
+        end
+    end
+    return #normalized > 0 and normalized or nil
+end
+
 function Runner.run(plugin, doc_path, book_id, worker_context, options)
     options = options or {}
     local adapter = Adapter:new(plugin)
@@ -61,22 +78,23 @@ function Runner.run(plugin, doc_path, book_id, worker_context, options)
     local online_chapters = api.chapters
     api.chapters = function(api_self, bid)
         if options.offline then
-            local cached = decode_file(chapter_list_path)
-            if type(cached) ~= "table" or #cached == 0 then
+            local cached = normalize_chapter_ids(decode_file(chapter_list_path))
+            if not cached then
                 error("离线同步没有可用的章节列表缓存")
             end
             return cached
         end
         local ok, chapters = pcall(online_chapters, api_self, bid)
-        if ok and type(chapters) == "table" and #chapters > 0 then
-            local saved, save_err = write_json(chapter_list_path, chapters)
+        local normalized = ok and normalize_chapter_ids(chapters) or nil
+        if normalized then
+            local saved, save_err = write_json(chapter_list_path, normalized)
             if not saved then
                 error("章节列表缓存保存失败: " .. tostring(save_err))
             end
-            return chapters
+            return normalized
         end
-        local cached = decode_file(chapter_list_path)
-        if type(cached) == "table" and #cached > 0 then return cached end
+        local cached = normalize_chapter_ids(decode_file(chapter_list_path))
+        if cached then return cached end
         error(ok and "微信读书章节列表为空" or tostring(chapters))
     end
 
