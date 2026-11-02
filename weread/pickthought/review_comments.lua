@@ -318,11 +318,8 @@ function Cache:get(review_id, now)
     if not db then return nil end
     local record
     local ok, err = pcall(function()
-        local purge = db:prepare("DELETE FROM review_comment_cache WHERE expires_at <= ?")
-        purge:reset():bind(now)
-        purge:step()
-        purge:close()
-
+        -- Cache reads stay read-only. Expiry cleanup and LRU updates are deferred
+        -- to put()/purge_expired(), avoiding write-lock contention with workers.
         local stmt = db:prepare([[SELECT total_count, payload_json, fetched_at
             FROM review_comment_cache WHERE review_id = ? AND expires_at > ?]])
         stmt:reset():bind(review_id, now)
@@ -339,20 +336,7 @@ function Cache:get(review_id, now)
                         total_count = total,
                         fetched_at = tonumber(row[3]) or now,
                     }
-                    local touch = db:prepare(
-                        "UPDATE review_comment_cache SET last_access_at = ? WHERE review_id = ?")
-                    touch:reset():bind(now, review_id)
-                    touch:step()
-                    touch:close()
                 end
-            end
-            if not record then
-                -- Invalidate legacy arrays and malformed/incomplete payloads.
-                local discard = db:prepare(
-                    "DELETE FROM review_comment_cache WHERE review_id = ?")
-                discard:reset():bind(review_id)
-                discard:step()
-                discard:close()
             end
         end
         stmt:close()
