@@ -1615,6 +1615,13 @@ function Sync.run(deps)
                         return nil, "无法清理新 .orig 备份(" .. tostring(rm_err or "删除失败") .. ")"
                     end
                 end
+                if prior_backup_to_restore and file_exists(prior_backup_to_restore) then
+                    local restored, restore_err = rename(prior_backup_to_restore, backup)
+                    if not restored then
+                        return nil, "此前 .orig.old 已保留于 " .. prior_backup_to_restore
+                            .. ",但恢复到 .orig 失败(" .. tostring(restore_err or "重命名失败") .. ")"
+                    end
+                end
                 return true
             end
             -- 固化注入基线(clean_source)为 .orig,使最终 .orig 与注入源一致(作者意见 #4)。
