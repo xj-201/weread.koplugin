@@ -60,8 +60,15 @@ function ScrollContainer:init()
     }
     local max_offset = math.max(0, self.content_h - self.viewport_h)
     self.max_offset = max_offset
-    self.scroll_offset = math.min(self.scroll_offset, max_offset)
     self.pages = self:_computePages()
+    -- Page navigation may place the final page at a start beyond
+    -- content_h - viewport_h when the final page is shorter than the viewport.
+    -- Preserve that exact page start when rebuilding the widget (e.g. returning
+    -- from comments); pan scrolling still uses max_offset as its pixel clamp.
+    local restore_max = math.max(max_offset,
+        self.pages and self.pages[#self.pages] or 0)
+    self.scroll_offset = math.max(0, math.min(
+        tonumber(self.scroll_offset) or 0, restore_max))
 
     self.v_scroll_bar = VerticalScrollBar:new{
         enable = max_offset > 0,
