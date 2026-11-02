@@ -142,11 +142,18 @@ local function extract_total(data, items)
     if value ~= nil then return value end
 
     local review = type(data.review) == "table" and data.review or nil
-    value = review and non_negative(review.commentsCount)
+    value = review and (non_negative(review.commentsCount)
+        or non_negative(review.total) or non_negative(review.totalCount))
     if value ~= nil then return value end
 
     local inner = type(data.data) == "table" and data.data or nil
-    value = inner and non_negative(inner.commentsCount)
+    value = inner and (non_negative(inner.commentsCount)
+        or non_negative(inner.total) or non_negative(inner.totalCount))
+    if value ~= nil then return value end
+
+    local inner_review = inner and type(inner.review) == "table" and inner.review or nil
+    value = inner_review and (non_negative(inner_review.commentsCount)
+        or non_negative(inner_review.total) or non_negative(inner_review.totalCount))
     if value ~= nil then return value end
 
     return #items
