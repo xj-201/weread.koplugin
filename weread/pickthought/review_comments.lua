@@ -293,6 +293,15 @@ local function ensure_schema(db)
         end
     end)
     if not migration_ok then return false end
+    -- 单独保存最近请求版本，避免用缓存占位行影响过期清理、容量淘汰和评论数扫描。
+    ok = pcall(function()
+        db:exec([[CREATE TABLE IF NOT EXISTS review_comment_cache_requests (
+            review_id       TEXT PRIMARY KEY,
+            request_version INTEGER NOT NULL,
+            updated_at      INTEGER NOT NULL
+        )]])
+    end)
+    if not ok then return false end
     -- lua-ljsqlite3 的 exec 只取第一条语句,索引必须逐条执行。
     ok = pcall(function()
         db:exec([[CREATE INDEX IF NOT EXISTS idx_review_comment_cache_expires
@@ -379,7 +388,7 @@ function Cache:get(review_id, now)
 end
 
 --- 记录请求启动版本。即使新请求失败，也阻止更早启动的 worker
---- 在之后完成时写入旧结果。占位行 payload 为空且 expires_at=0，不会被读取或计入评论数。
+--- 在之后完成时写入旧结果。版本单独存表，不污染评论缓存数据。
 function Cache:mark_request(review_id, book_id, request_version, now)
     review_id = trim(tostring(review_id or ""))
     request_version = tonumber(request_version)
@@ -388,16 +397,24 @@ function Cache:mark_request(review_id, book_id, request_version, now)
     local db = self:_open()
     if not db then return false end
     local ok, err = pcall(function()
-        local stmt = db:prepare([[INSERT INTO review_comment_cache
-            (review_id, book_id, total_count, payload_json, fetched_at, last_access_at,
-                expires_at, request_version)
-            VALUES (?, ?, 0, '', 0, 0, 0, ?)
+        local stmt = db:prepare([[INSERT INTO review_comment_cache_requests
+            (review_id, request_version, updated_at)
+            VALUES (?, ?, ?)
             ON CONFLICT(review_id) DO UPDATE SET
-                request_version=excluded.request_version
-            WHERE excluded.request_version > review_comment_cache.request_version]])
-        stmt:reset():bind(review_id, tostring(book_id or ""), request_version)
+                request_version=excluded.request_version,
+                updated_at=excluded.updated_at
+            WHERE excluded.request_version > review_comment_cache_requests.request_version]])
+        stmt:reset():bind(review_id, request_version, now)
         stmt:step()
         stmt:close()
+
+        -- 评论 worker 的最长等待时间为 180 秒；保留 24 小时版本记录，
+        -- 防止迟到 worker 复活旧结果，同时限制辅助表增长。
+        local cleanup = db:prepare(
+            "DELETE FROM review_comment_cache_requests WHERE updated_at < ?")
+        cleanup:reset():bind(now - 86400)
+        cleanup:step()
+        cleanup:close()
     end)
     close_db(db)
     if not ok then
@@ -436,7 +453,10 @@ function Cache:put(review_id, book_id, result, now, ttl, request_version)
                 last_access_at=excluded.last_access_at,
                 expires_at=excluded.expires_at,
                 request_version=excluded.request_version
-            WHERE excluded.request_version >= review_comment_cache.request_version]])
+            WHERE excluded.request_version >= COALESCE((
+                SELECT request_version FROM review_comment_cache_requests
+                WHERE review_id = excluded.review_id
+            ), review_comment_cache.request_version)]])
         upsert:reset():bind(review_id, tostring(book_id or ""),
             total_count, payload,
             now, now, now + ttl, request_version)
