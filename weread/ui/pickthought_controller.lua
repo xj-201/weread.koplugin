@@ -5,6 +5,17 @@ local PluginUtil = require("weread.lib.plugin_util")
 local _ = PluginUtil.tr
 local M = {}
 
+-- 单调递增的评论缓存请求版本。由 reader 主进程分配后传给 fork worker，
+-- 使同一进程内后发起的请求即使晚完成，也不能覆盖先前已写入的新版本。
+local comment_cache_request_version = 0
+
+local function next_comment_cache_request_version()
+    local wall_version = math.floor(os.time() * 1000000)
+    comment_cache_request_version =
+        math.max(wall_version, comment_cache_request_version + 1)
+    return comment_cache_request_version
+end
+
 local function current_file(plugin)
     return plugin.ui and plugin.ui.document and plugin.ui.document.file
 end
@@ -331,10 +342,12 @@ function M:_viewPickThoughtComments(book_id, item, popup, request_token)
     U.mkdir(result_dir)
     local result_path = result_dir .. "/comments-" .. tostring(os.time())
         .. "-" .. tostring(math.random(100000, 999999)) .. ".json"
+    -- 必须在 fork 前由父进程分配；worker 各自的 Lua 状态不能用于排序请求。
+    local cache_request_version = next_comment_cache_request_version()
     local child = function()
         local child_ok, value = pcall(function()
             return ReviewComments.cache_get(cache, review_id, load_comments,
-                book_id, os.time(), ttl)
+                book_id, os.time(), ttl, cache_request_version)
         end)
         local encoded_ok, encoded = pcall(Json.encode,
             child_ok and (value or {ok = false}) or {
