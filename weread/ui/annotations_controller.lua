@@ -216,9 +216,12 @@ function M:_installLinkFilter()
                 if link then
                     local href = plugin:_linkHref(link)
                     local pickthought = isPickThoughtHref(href)
+                    local unified = plugin._usesUnifiedAnnotations
+                        and plugin:_usesUnifiedAnnotations()
+                    local hidden = plugin.settings:get("cache").show_annotations == false
+                    local edge = isPageTurnEdgeTap(plugin, ges)
                     if isThoughtHref(href)
-                        and (pickthought or not (plugin._usesUnifiedAnnotations
-                            and plugin:_usesUnifiedAnnotations())) then
+                        and (not pickthought or hidden or edge) then
                         return false
                     end
                 end
