@@ -425,8 +425,8 @@ function M:_viewPickThoughtComments(book_id, item, popup, request_token)
             if self._pickthought_comment_request_pids then
                 self._pickthought_comment_request_pids[pid] = nil
             end
-            if not timeout_notified and request_is_current()
-                and popup._showCommentNotice then
+            if not result_received and not timeout_notified
+                and request_is_current() and popup._showCommentNotice then
                 timeout_notified = true
                 popup:_showCommentNotice(ReviewComments.message_for("network"))
             end
