@@ -48,3 +48,20 @@ jobs:
 
       - name: Test legacy SQLite schema migration
         run: python3 tests/test_thought_db_migration.py
+
+      - name: Package KOReader plugin
+        run: |
+          set -euo pipefail
+          mkdir -p dist/weread.koplugin
+          cp main.lua _meta.lua README.md LICENSE NOTICE CHANGELOG.md dist/weread.koplugin/
+          cp -a docs fonts icons integrations weread dist/weread.koplugin/
+          cd dist
+          zip -qr weread.koplugin-test.zip weread.koplugin
+
+      - name: Upload installable plugin ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: weread-koplugin-kindle-test
+          path: dist/weread.koplugin-test.zip
+          if-no-files-found: error
+          retention-days: 14
