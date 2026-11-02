@@ -1,0 +1,64 @@
+11/02/26-12:50:52 INFO  [WeRead] thought popup emoji font: /mnt/us/koreader/plugins/weread.koplugin/fonts/NotoEmoji-Regular.ttf 
+11/02/26-12:50:52 INFO  [WeRead] initialized: version= 1.6.0 
+11/02/26-12:50:52 INFO  zlibrary_credentials.lua is undefined. Using UI settings if available. 
+11/02/26-12:50:57 INFO  opening file /mnt/us/documents/玄鉴仙族 - 季越人.txt - 初入.epub 
+11/02/26-12:50:57 INFO  Inhibiting user input 
+11/02/26-12:50:57 INFO  [WeRead] initialized: version= 1.6.0 
+11/02/26-12:50:57 INFO  zlibrary_credentials.lua is undefined. Using UI settings if available. 
+11/02/26-12:51:02 INFO  [WeRead] reader_open_perf stage= reader_ready_begin wall_ms= 0.0 session= 1 
+11/02/26-12:51:02 INFO  [WeRead] reader_open_perf stage= reader_setup wall_ms= 9.8 book_id= local 
+11/02/26-12:51:02 INFO  [WeRead] reader_open_perf stage= overlay_setup wall_ms= 23.8 
+11/02/26-12:51:02 INFO  [WeRead] reader_open_perf stage= annotations_begin wall_ms= 0.0 session= 1 
+11/02/26-12:51:02 INFO  [WeRead] reader_open_perf stage= context_begin wall_ms= 0.0 session= 1 
+11/02/26-12:51:02 INFO  [WeRead] reader_open_perf stage= annotation_binding wall_ms= 15.1 book_id= 45420986 
+11/02/26-12:51:02 INFO  [WeRead] reader_open_perf stage= annotation_catalog wall_ms= 214.8 chapters= 1681 
+11/02/26-12:51:03 INFO  [WeRead] reader_open_perf stage= chapter_mapping wall_ms= 914.1 chapters= 1681 
+11/02/26-12:51:03 INFO  [WeRead] reader_open_perf stage= document_identity wall_ms= 22.4 
+11/02/26-12:51:03 INFO  [WeRead] reader_open_perf stage= legacy_import wall_ms= 15.1 
+11/02/26-12:51:03 INFO  [WeRead] reader_open_perf stage= saved_annotation_status wall_ms= 14.4 
+11/02/26-12:51:03 INFO  [WeRead] reader_open_perf stage= context_total wall_ms= 1197.3 ok= true available= true 
+11/02/26-12:51:03 INFO  [WeRead] reader_open_perf stage= annotation_display_state wall_ms= 53.9 
+11/02/26-12:51:05 INFO  [WeRead] reader_open_perf stage= saved_annotation_overlay wall_ms= 1343.6 
+11/02/26-12:51:05 INFO  [WeRead] reader_open_perf stage= annotation_prefetch_disabled wall_ms= 1.2 
+11/02/26-12:51:05 INFO  [WeRead] reader_open_perf stage= annotations_ready wall_ms= 2630.6 
+11/02/26-12:51:05 INFO  [WeRead][ReadReport] reading time report started: reason= reader_ready book_id= CB_6k554r57tDNP77H75M9N92uR source= manual 
+11/02/26-12:51:05 INFO  [WeRead] reader_open_perf stage= reader_services wall_ms= 3.8 
+11/02/26-12:51:05 INFO  [WeRead] reader_open_perf stage= reader_ready_total wall_ms= 2635.0 
+11/02/26-12:51:07 INFO  Restoring user input handling 
+11/02/26-12:51:42 INFO  [WeRead][ReadReport] read report success: count= 1 has_synckey= true 
+11/02/26-12:52:14 ERROR [WeRead] API response reported an error: method= POST url= https://weread.qq.com/web/book/read api= unknown status= 200 content_type= application/json; charset=utf-8 body_bytes= 70 response_body= {"errCode":-2012,"errMsg":"登录超时","errLog":"CAsA1QQ","info":""} 
+11/02/26-12:53:46 INFO  [WeRead][ReadReport] reading time report stopped: reason= account_cleared success_count= 4 failure_count= 0 
+11/02/26-12:54:00 ERROR [WeRead] HTTP response unavailable: method= GET url= https://weread.qq.com/api/auth/getLoginInfo?uid=efd5dd6f-7dec-4373-ab3d-5e1c4ca377b3&otp= api= unknown status= wantread content_type= unknown body_bytes= 0 response_body=  
+11/02/26-12:54:06 INFO  [WeRead][QRLogin] login completed 
+11/02/26-12:54:17 INFO  [WeRead] reader_open_perf stage= context_begin wall_ms= 0.0 session= 1 
+11/02/26-12:54:17 INFO  [WeRead] reader_open_perf stage= annotation_binding wall_ms= 15.1 book_id= 45420986 
+11/02/26-12:54:17 INFO  [WeRead] reader_open_perf stage= context_cached wall_ms= 0.5 
+11/02/26-12:54:17 INFO  [WeRead] reader_open_perf stage= context_begin wall_ms= 0.0 session= 1 
+11/02/26-12:54:17 INFO  [WeRead] reader_open_perf stage= annotation_binding wall_ms= 13.2 book_id= 45420986 
+11/02/26-12:54:17 INFO  [WeRead] reader_open_perf stage= context_cached wall_ms= 1.0 
+11/02/26-12:54:22 INFO  [WeRead] reader_open_perf stage= context_begin wall_ms= 0.0 session= 1 
+11/02/26-12:54:22 INFO  [WeRead] reader_open_perf stage= annotation_binding wall_ms= 19.3 book_id= 45420986 
+11/02/26-12:54:22 INFO  [WeRead] reader_open_perf stage= context_cached wall_ms= 0.7 
+11/02/26-12:54:22 INFO  [WeRead] reader_open_perf stage= annotation_job_queued wall_ms= 0.0 book_id= 45420986 session= 1 background= false chapters= 1 
+11/02/26-12:54:23 INFO  [WeRead] reader_open_perf stage= annotation_job_start wall_ms= 164.1 book_id= 45420986 session= 1 
+11/02/26-12:54:23 INFO  [WeRead] reader_open_perf stage= chapter_cache_begin wall_ms= 0.0 book_id= 45420986 session= 1 chapter_uid= 1686 
+11/02/26-12:54:23 INFO  [WeRead] reader_open_perf stage= chapter_source_cache wall_ms= 32.1 book_id= 45420986 session= 1 chapter_uid= 1686 cache_hit= false 
+11/02/26-12:54:25 INFO  [WeRead] reader_open_perf stage= chapter_source_ready wall_ms= 1834.6 book_id= 45420986 session= 1 chapter_uid= 1686 
+11/02/26-12:54:25 INFO  [WeRead] reader_open_perf stage= chapter_projection_cache wall_ms= 15.5 book_id= 45420986 session= 1 chapter_uid= 1686 cache_hit= false 
+11/02/26-12:54:25 INFO  [WeRead] reader_open_perf stage= chapter_match_begin wall_ms= 126.4 book_id= 45420986 session= 1 chapter_uid= 1686 underlines= 7 resumed= false 
+11/02/26-12:54:25 INFO  [WeRead] external_annotation_perf book_id=45420986chapter_uid=1686we_title=""local_title=""start_xp=trueend_xp=trueindexed=trueunderlines=7 
+11/02/26-12:54:27 INFO  [WeRead] external_annotation_perf book_id=45420986chapter_uid=1686seq=1len=57hash=348b79cbmode=findAllTexthits=0found=falsepartial=falsems=2083.1 
+11/02/26-12:54:28 INFO  [WeRead] external_annotation_perf book_id=45420986chapter_uid=1686seq=2len=30hash=3e1d60afmode=findAllTexthits=0found=falsepartial=falsems=1355.4 
+11/02/26-12:54:29 INFO  [WeRead] external_annotation_perf book_id=45420986chapter_uid=1686seq=3len=183hash=43dabfefmode=findAllTexthits=0found=falsepartial=falsems=1293.4 
+11/02/26-12:54:31 INFO  [WeRead] external_annotation_perf book_id=45420986chapter_uid=1686seq=4len=3hash=0b8a942emode=findAllTexthits=7found=falsepartial=falsems=1435.4 
+11/02/26-12:54:32 INFO  [WeRead] external_annotation_perf book_id=45420986chapter_uid=1686seq=5len=3hash=0b8a9fcbmode=findAllTexthits=12found=falsepartial=falsems=1437.8 
+11/02/26-12:54:34 INFO  [WeRead] external_annotation_perf book_id=45420986chapter_uid=1686seq=6len=48hash=e3b02070mode=findAllTexthits=0found=falsepartial=falsems=1374.0 
+11/02/26-12:54:34 INFO  [WeRead] external_annotation_perf book_id=45420986chapter_uid=1686seq=7len=18hash=4148b727mode=chapter_texthits=1found=truepartial=falsems=19.4 
+11/02/26-12:54:34 INFO  [WeRead] external_annotation_perf book_id=45420986chapter_uid=1686stage=chapterlocated=1unmatched=6pos_ms=0.000chapter_ms=9050.7 
+11/02/26-12:54:34 INFO  [WeRead] reader_open_perf stage= chapter_match wall_ms= 9349.4 book_id= 45420986 session= 1 chapter_uid= 1686 located= 1 unmatched= 6 
+11/02/26-12:54:34 INFO  [WeRead] reader_open_perf stage= chapter_save wall_ms= 91.7 book_id= 45420986 session= 1 chapter_uid= 1686 
+11/02/26-12:54:34 INFO  [WeRead] reader_open_perf stage= annotation_job_total wall_ms= 11852.4 book_id= 45420986 session= 1 ok= true 
+ffi.findlib: lodepng
+ffi.load: libs/liblodepng.so
+11/02/26-12:55:58 INFO  [WeRead] initialized: version= 1.6.0 
+11/02/26-12:55:58 INFO  zlibrary_credentials.lua is undefined. Using UI settings if available. 
