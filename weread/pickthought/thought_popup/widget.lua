@@ -335,6 +335,7 @@ function ThoughtPopupWidget:_enterComments(item, result)
     self.items = CommentsView.build_items(item, comments, "bottom")
     -- 同居中组件:弹窗显示中重建布局必须显式请求重绘。
     self:_applyContentAndRepaint()
+    self:_showIncompleteCommentsNotice(result, #comments)
     return true
 end
 
