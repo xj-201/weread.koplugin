@@ -93,7 +93,7 @@ do
     fs.write("/books/a.epub", "INJECTED-v1")
     fs.write("/books/a.epub.pickthought/unused", "keep")
     fs.write("/books/candidate.epub", "INJECTED-v2")
-    fs.write("/books/a.epub.orig", "CLEAN-v1")
+    fs.write("/books/a.epub.pickthought/original.epub", "CLEAN-v1")
     local tx = harness(fs, "success-1")
     local result, err = tx:commit{
         root = "/books/a.epub.pickthought", doc_path = "/books/a.epub",
@@ -101,7 +101,7 @@ do
     }
     expect(result and result.state == "committed", "incremental commit should succeed: " .. tostring(err))
     expect(fs.read("/books/a.epub") == "INJECTED-v2", "candidate installed")
-    expect(fs.read("/books/a.epub.orig") == "CLEAN-v1", "baseline untouched")
+    expect(fs.read("/books/a.epub.pickthought/original.epub") == "CLEAN-v1", "baseline untouched")
     expect(fs.read(result.previous_current) == "INJECTED-v1", "previous current retained")
 end
 
@@ -110,7 +110,7 @@ end
 do
     local fs = new_fs()
     fs.write("/books/b.epub", "INJECTED-old")
-    fs.write("/books/b.epub.orig", "CLEAN-old")
+    fs.write("/books/b.epub.pickthought/original.epub", "CLEAN-old")
     fs.write("/books/candidate.epub", "INJECTED-new")
     fs.fail_rename = function(from, to)
         return from:match("/candidate%.epub$") and to == "/books/b.epub"
@@ -123,7 +123,7 @@ do
     expect(not result and tostring(err):match("previous files restored"),
         "post-rename error should trigger rollback: " .. tostring(err))
     expect(fs.read("/books/b.epub") == "INJECTED-old", "old current restored")
-    expect(fs.read("/books/b.epub.orig") == "CLEAN-old", "baseline remains untouched")
+    expect(fs.read("/books/b.epub.pickthought/original.epub") == "CLEAN-old", "baseline remains untouched")
 end
 
 -- Replacing an external clean source is one transaction: both the active book
@@ -131,18 +131,18 @@ end
 do
     local fs = new_fs()
     fs.write("/books/c.epub", "INJECTED-v1")
-    fs.write("/books/c.epub.orig", "CLEAN-v1")
+    fs.write("/books/c.epub.pickthought/original.epub", "CLEAN-v1")
     fs.write("/books/candidate.epub", "INJECTED-v2")
     fs.write("/books/new-clean.epub", "CLEAN-v2")
     local tx = harness(fs, "rebuild-success")
     local result, err = tx:commit{
         root = "/books/c.epub.pickthought", doc_path = "/books/c.epub",
-        candidate_path = "/books/candidate.epub", original_path = "/books/c.epub.orig",
+        candidate_path = "/books/candidate.epub", original_path = "/books/c.epub.pickthought/original.epub",
         new_original_path = "/books/new-clean.epub", operation = "rebuild",
     }
     expect(result and result.state == "committed", "rebuild should commit: " .. tostring(err))
     expect(fs.read("/books/c.epub") == "INJECTED-v2", "new injected EPUB installed")
-    expect(fs.read("/books/c.epub.orig") == "CLEAN-v2", "new clean baseline installed")
+    expect(fs.read("/books/c.epub.pickthought/original.epub") == "CLEAN-v2", "new clean baseline installed")
     expect(fs.read(result.previous_current) == "INJECTED-v1", "previous current retained")
     expect(fs.read(result.previous_original) == "CLEAN-v1", "previous baseline retained")
 end
@@ -152,22 +152,22 @@ end
 do
     local fs = new_fs()
     fs.write("/books/d.epub", "INJECTED-v1")
-    fs.write("/books/d.epub.orig", "CLEAN-v1")
+    fs.write("/books/d.epub.pickthought/original.epub", "CLEAN-v1")
     fs.write("/books/candidate.epub", "INJECTED-v2")
     fs.write("/books/new-clean.epub", "CLEAN-v2")
     fs.fail_rename = function(from, to)
-        return from:match("/new%-original%.epub$") and to == "/books/d.epub.orig"
+        return from:match("/new%-original%.epub$") and to == "/books/d.epub.pickthought/original.epub"
     end
     local tx = harness(fs, "rebuild-rollback")
     local result, err = tx:commit{
         root = "/books/d.epub.pickthought", doc_path = "/books/d.epub",
-        candidate_path = "/books/candidate.epub", original_path = "/books/d.epub.orig",
+        candidate_path = "/books/candidate.epub", original_path = "/books/d.epub.pickthought/original.epub",
         new_original_path = "/books/new-clean.epub", operation = "rebuild",
     }
     expect(not result and tostring(err):match("previous files restored"),
         "baseline install error should roll back: " .. tostring(err))
     expect(fs.read("/books/d.epub") == "INJECTED-v1", "old injected EPUB restored")
-    expect(fs.read("/books/d.epub.orig") == "CLEAN-v1", "old baseline restored")
+    expect(fs.read("/books/d.epub.pickthought/original.epub") == "CLEAN-v1", "old baseline restored")
 end
 
 -- Unknown data at doc_path must never be overwritten during recovery.
@@ -225,7 +225,7 @@ end
 do
     local fs = new_fs()
     fs.write("/books/g.epub", "INJECTED-v1")
-    fs.write("/books/g.epub.orig", "CLEAN-v1")
+    fs.write("/books/g.epub.pickthought/original.epub", "CLEAN-v1")
     fs.write("/books/candidate.epub", "INJECTED-v2")
     fs.write("/books/new-clean.epub", "BROKEN-clean")
     local tx = harness(fs, "bad-clean-stage", function(path, role)
@@ -234,13 +234,13 @@ do
     end)
     local result, err = tx:commit{
         root = "/books/g.epub.pickthought", doc_path = "/books/g.epub",
-        candidate_path = "/books/candidate.epub", original_path = "/books/g.epub.orig",
+        candidate_path = "/books/candidate.epub", original_path = "/books/g.epub.pickthought/original.epub",
         new_original_path = "/books/new-clean.epub", operation = "rebuild",
     }
     expect(not result and tostring(err):match("previous files restored"),
         "bad staged baseline should abort cleanly: " .. tostring(err))
     expect(fs.read("/books/g.epub") == "INJECTED-v1", "current EPUB unchanged on staged baseline validation failure")
-    expect(fs.read("/books/g.epub.orig") == "CLEAN-v1", "preexisting baseline remains untouched")
+    expect(fs.read("/books/g.epub.pickthought/original.epub") == "CLEAN-v1", "preexisting baseline remains untouched")
 end
 
 print("backup_transaction_spec: " .. checks .. " checks passed")
