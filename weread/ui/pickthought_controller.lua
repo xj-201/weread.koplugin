@@ -199,6 +199,12 @@ local function comment_error_kind(err)
 end
 
 function M:_viewPickThoughtComments(book_id, item, popup, request_token)
+    -- Invalidate any older count-prefetch result for this thought. The full
+    -- comment request is now the newest source of truth for its count.
+    if type(item) == "table" then
+        item._comment_count_request_generation =
+            (tonumber(item._comment_count_request_generation) or 0) + 1
+    end
     local popup_generation = popup and popup._popup_generation
     local function request_is_current()
         if not popup then return false end
@@ -396,7 +402,7 @@ function M:_prefetchPickThoughtCommentCounts(popup, book_id)
         return popup._popup_generation == popup_generation
     end
     local visible = popup:visible_thought_items()
-    local pending, changed = {}, false
+    local pending, pending_generations, changed = {}, {}, false
     for _, item in ipairs(visible) do
         local review_id = tostring(item and item.review_id or "")
         if review_id ~= "" and (tonumber(item.comment_count) or 0) <= 0 then
@@ -409,6 +415,8 @@ function M:_prefetchPickThoughtCommentCounts(popup, book_id)
                 end
             elseif connected then
                 pending[#pending + 1] = item
+                pending_generations[item] =
+                    tonumber(item._comment_count_request_generation) or 0
             end
         end
     end
@@ -484,7 +492,13 @@ function M:_prefetchPickThoughtCommentCounts(popup, book_id)
                 local updated = false
                 for _, item in ipairs(pending) do
                     local count = counts[tostring(item.review_id)]
-                    if count ~= nil and (tonumber(item.comment_count) or 0) ~= count then
+                    local generation = tonumber(item._comment_count_request_generation) or 0
+                    -- A user may have opened this thought while prefetch was
+                    -- running. Never let that older count overwrite the
+                    -- result of the newer full-comment request.
+                    if generation == pending_generations[item]
+                        and count ~= nil
+                        and (tonumber(item.comment_count) or 0) ~= count then
                         item.comment_count = count
                         updated = true
                     end
