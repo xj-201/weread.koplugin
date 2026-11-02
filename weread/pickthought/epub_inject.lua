@@ -9,6 +9,28 @@ local AnnotationStyle = require("weread.pickthought.annotation_style")
 local EpubReader = require("weread.pickthought.epub_reader")
 local Json = require("weread.pickthought.json")
 local U = require("weread.pickthought.util")
+local lfs = require("libs/libkoreader-lfs")
+
+-- 候选名包含进程内序号、高分辨率时钟和随机数,并用 mkdir 原子占位防止跨进程撞名。
+local temp_sequence = 0
+local function reserve_temp_paths(dest, now)
+    for _ = 1, 32 do
+        temp_sequence = temp_sequence + 1
+        local pointer = tostring({}):gsub("[^%w]", "")
+        local token = table.concat({
+            tostring(now()), tostring(os.clock()):gsub("[^%w]", ""),
+            tostring(math.random(100000, 999999)), tostring(temp_sequence), pointer,
+        }, "-")
+        local tmp = dest .. ".tmp-" .. token
+        local lock_dir = tmp .. ".lock"
+        local ok, err = lfs.mkdir(lock_dir)
+        if ok then return tmp, tmp .. ".spine", lock_dir end
+        if lfs.attributes(lock_dir, "mode") ~= "directory" then
+            return nil, nil, nil, tostring(err or "无法占用 EPUB 临时路径")
+        end
+    end
+    return nil, nil, nil, "多次尝试后仍无法取得唯一 EPUB 临时路径"
+end
 local logger = require("logger")
 local PerformanceMode = require("weread.pickthought.performance_mode")
 
@@ -334,14 +356,23 @@ function M.inject_copy(src, book_id, chapters, opts)
     if not mod then return nil, arc_err end
 
     local dest = opts.dest or M.copy_path(src)
-    local mtime = now()
-    -- tmp 带时间戳:两个 worker 罕见并发时(重启接管失控 + 重新同步)
-    -- 不会互相截断同一个临时文件。
-    local tmp = dest .. ".tmp-" .. tostring(mtime)
+    local tmp, disk_tmp, temp_lock, reserve_err = reserve_temp_paths(dest, now)
+    if not tmp then return nil, "无法分配 EPUB 临时路径:" .. tostring(reserve_err) end
+    local function release_temp_lock()
+        if not temp_lock then return true end
+        local ok, err = U.remove_tree(temp_lock)
+        if not ok then
+            logger.warn("[撷思][EpubInject] failed to release temp lock",
+                temp_lock, tostring(err or "清理失败"))
+            return nil, err
+        end
+        temp_lock = nil
+        return true
+    end
     local writer = mod.Writer:new{}
     if not writer:open(tmp, "epub") then
-        -- open 失败也可能已创建/截断了部分临时文件;清理本次专属路径,不触碰 src/dest。
         os.remove(tmp)
+        release_temp_lock()
         return nil, "无法创建副本:" .. tostring(writer.err or tmp)
     end
     local function close_writer()
@@ -353,18 +384,26 @@ function M.inject_copy(src, book_id, chapters, opts)
         if writer.err then return nil, tostring(writer.err) end
         return true
     end
-    -- 非目标大条目走磁盘拷贝的临时根目录:本批同步一个,失败/结束统一清理。
-    local disk_tmp = dest .. ".spine-" .. tostring(mtime)
-    U.mkdir(disk_tmp)
+    -- disk_tmp 使用本次独占 token,失败清理不会碰到其他 worker 的中转目录。
+    local mkdir_ok, mkdir_err = U.mkdir(disk_tmp)
+    if not mkdir_ok then
+        close_writer()
+        os.remove(tmp)
+        release_temp_lock()
+        return nil, "无法创建 EPUB 中转目录:" .. tostring(mkdir_err or disk_tmp)
+    end
 
     local reader
-    -- 非目标大条目走磁盘的临时根,失败/结束统一清理(见上方 disk_tmp 定义)
     local function fail(message)
         local detail = writer.err
         local closed, close_error = close_writer()
         if reader then reader:close() end
         pcall(U.remove_tree, disk_tmp)
         os.remove(tmp)
+        local lock_ok, lock_err = release_temp_lock()
+        if not lock_ok then
+            detail = (detail and (detail .. ";") or "") .. "临时锁清理失败: " .. tostring(lock_err)
+        end
         if not closed then
             detail = (detail and (detail .. ";") or "") .. "writer close: " .. tostring(close_error)
         end
@@ -576,6 +615,7 @@ function M.inject_copy(src, book_id, chapters, opts)
         pcall(U.remove_tree, disk_tmp)
         close_writer()
         os.remove(tmp)
+        release_temp_lock()
         return nil, string.format("没有可注入的章节(未匹配 %d 章,定位失败 %d 条划线)",
             #stats.unmatched, stats.dropped)
     end
@@ -596,6 +636,7 @@ function M.inject_copy(src, book_id, chapters, opts)
     local closed, close_error = close_writer()
     if not closed then
         os.remove(tmp)
+        release_temp_lock()
         return nil, "关闭 EPUB 副本失败:" .. tostring(close_error)
     end
 
@@ -607,7 +648,13 @@ function M.inject_copy(src, book_id, chapters, opts)
     end
     if not ok then
         os.remove(tmp)
+        release_temp_lock()
         return nil, "无法生成副本:" .. tostring(rename_err or "重命名失败")
+    end
+    local lock_ok, lock_err = release_temp_lock()
+    if not lock_ok then
+        logger.warn("[撷思][EpubInject] output created but temp lock cleanup failed",
+            tostring(lock_err or "未知错误"))
     end
     stats.dest = dest
     stats.gc_full_collections = gc_policy.full_collections
