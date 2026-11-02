@@ -227,13 +227,59 @@ function M:_viewPickThoughtComments(book_id, item, popup, request_token)
     end
 
     local function load_comments()
-        local ok, data, err = self.client:get_review_comments(review_id, 30)
-        if not ok then
-            local kind = comment_error_kind(err)
-            return {ok = false, error = kind,
-                message = ReviewComments.message_for(kind)}
+        local page_size = 30
+        local max_pages = 20
+        local offset = 0
+        local synckey = 0
+        local all_items, seen = {}, {}
+        local total_count = 0
+
+        for page_index = 1, max_pages do
+            local ok, data, err = self.client:get_review_comments(review_id, page_size, {
+                comments_max_idx = offset,
+                synckey = synckey,
+            })
+            if not ok then
+                local kind = comment_error_kind(err)
+                return {ok = false, error = kind,
+                    message = ReviewComments.message_for(kind)}
+            end
+
+            local page = ReviewComments.normalize_response(data, review_id)
+            if not page.ok then return page end
+            if page_index == 1 then
+                total_count = tonumber(page.total_count) or 0
+                synckey = tonumber(data.synckey) or synckey
+            else
+                total_count = math.max(total_count, tonumber(page.total_count) or 0)
+                synckey = tonumber(data.synckey) or synckey
+            end
+
+            for _, comment in ipairs(page.items or {}) do
+                local id = tostring(comment.review_id or "")
+                local key = id ~= "" and ("id:" .. id)
+                    or ("text:" .. tostring(comment.author or "") .. "\\0"
+                        .. tostring(comment.content or ""))
+                if not seen[key] then
+                    seen[key] = true
+                    all_items[#all_items + 1] = comment
+                end
+            end
+
+            local raw_count = tonumber(page.raw_count) or #(page.items or {})
+            if raw_count <= 0 then break end
+            offset = offset + raw_count
+            if raw_count < page_size then break end
+            if offset >= total_count and total_count > 0 then break end
         end
-        return ReviewComments.normalize_response(data, review_id)
+
+        return {
+            ok = true,
+            items = all_items,
+            total_count = math.max(total_count, #all_items),
+            truncated = math.max(total_count, #all_items) > #all_items,
+            review_id = review_id,
+        }
     end
 
     local connected = false
