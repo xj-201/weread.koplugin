@@ -21,6 +21,7 @@ local function new_fs()
     end
     function fs.exists(path) return fs.files[path] ~= nil or fs.dirs[path] == true end
     function fs.mkdir(path) ensure_dir(path); return true end
+    function fs.dir_exists(path) return fs.dirs[path] == true end
     function fs.read(path) return fs.files[path] end
     function fs.write(path, data)
         ensure_dir(parent(path))
@@ -46,12 +47,12 @@ local function new_fs()
     return fs
 end
 
-local function harness(fs, id)
+local function harness(fs, id, validate_fn)
     local registry, sequence = {}, 0
     local tx = Transaction.new{
         id = function() return id end,
         fs = {
-            exists = fs.exists, mkdir = fs.mkdir, rename = fs.rename,
+            exists = fs.exists, dir_exists = fs.dir_exists, mkdir = fs.mkdir, rename = fs.rename,
             fingerprint = fs.fingerprint, read_file = fs.read, write_atomic = fs.write,
         },
         encode = function(value)
@@ -64,7 +65,7 @@ local function harness(fs, id)
             assert(registry[raw], "unknown manifest token")
             return clone(registry[raw])
         end,
-        validate = function(path, role)
+        validate = validate_fn or function(path, role)
             local data = fs.read(path)
             if not data then return false, "missing " .. role end
             if role == "candidate" or role == "installed_current" then
@@ -215,6 +216,31 @@ do
     local second, second_message = tx:recover(root)
     expect(second == true, "second recovery should be harmless: " .. tostring(second_message))
     expect(fs.read("/books/f.epub") == "INJECTED-before", "repeated recovery leaves current unchanged")
+end
+
+
+-- If validation of the staged new clean baseline fails before the old baseline
+-- is moved, the preexisting baseline must remain untouched and must not be
+-- mistaken for the failed new baseline.
+do
+    local fs = new_fs()
+    fs.write("/books/g.epub", "INJECTED-v1")
+    fs.write("/books/g.epub.orig", "CLEAN-v1")
+    fs.write("/books/candidate.epub", "INJECTED-v2")
+    fs.write("/books/new-clean.epub", "BROKEN-clean")
+    local tx = harness(fs, "bad-clean-stage", function(path, role)
+        if role == "clean_original" then return false, "deliberate validation failure" end
+        return fs.read(path) ~= nil
+    end)
+    local result, err = tx:commit{
+        root = "/books/g.epub.pickthought", doc_path = "/books/g.epub",
+        candidate_path = "/books/candidate.epub", original_path = "/books/g.epub.orig",
+        new_original_path = "/books/new-clean.epub", operation = "rebuild",
+    }
+    expect(not result and tostring(err):match("previous files restored"),
+        "bad staged baseline should abort cleanly: " .. tostring(err))
+    expect(fs.read("/books/g.epub") == "INJECTED-v1", "current EPUB unchanged on staged baseline validation failure")
+    expect(fs.read("/books/g.epub.orig") == "CLEAN-v1", "preexisting baseline remains untouched")
 end
 
 print("backup_transaction_spec: " .. checks .. " checks passed")
