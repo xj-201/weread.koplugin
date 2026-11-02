@@ -43,7 +43,14 @@ function Transaction.new(deps)
 end
 
 function Transaction:_write(path, value)
-    local ok, encoded = pcall(self.encode, value)
+    local serializable = value
+    if type(value) == "table" and value.manifest_path then
+        serializable = {}
+        for key, item in pairs(value) do
+            if key ~= "manifest_path" then serializable[key] = item end
+        end
+    end
+    local ok, encoded = pcall(self.encode, serializable)
     if not ok or type(encoded) ~= "string" then
         return nil, "encode manifest failed: " .. tostring(encoded)
     end
@@ -189,6 +196,9 @@ function Transaction:commit(opts)
         or type(candidate_path) ~= "string" or candidate_path == "" then
         return nil, "root, doc_path and candidate_path are required"
     end
+    if root ~= doc_path .. ".pickthought" then
+        return nil, "transaction root must be doc_path .. '.pickthought'"
+    end
     if doc_path == candidate_path then return nil, "candidate_path must differ from doc_path" end
     if not self.exists(doc_path) then return nil, "current EPUB does not exist: " .. doc_path end
     if not self.exists(candidate_path) then return nil, "candidate EPUB does not exist: " .. candidate_path end
@@ -196,11 +206,11 @@ function Transaction:commit(opts)
 
     local original_path, new_original_path = opts.original_path, opts.new_original_path
     local original_changed = new_original_path ~= nil
-    if original_changed and (type(original_path) ~= "string" or original_path == ""
+    if original_changed and (original_path ~= join(root, "original.epub")
         or original_path == doc_path or original_path == candidate_path
         or new_original_path == doc_path or new_original_path == candidate_path
         or new_original_path == original_path or not self.exists(new_original_path)) then
-        return nil, "original_path and an existing new_original_path are required when changing baseline"
+        return nil, "original_path must be the transaction root original.epub and new_original_path must exist"
     end
 
     local id = tostring(self.id())
@@ -359,6 +369,12 @@ function Transaction:recover(root)
     local paths = self:_paths(root, id)
     local tx, tx_err = self:_read(paths.manifest)
     if not tx then return nil, "active transaction manifest unreadable: " .. tostring(tx_err) end
+    local expected_doc_path = root:sub(1, -#".pickthought" - 1)
+    if expected_doc_path == "" or tx.doc_path ~= expected_doc_path
+        or (tx.original_changed and tx.original_path ~= join(root, "original.epub")) then
+        return nil, "transaction manifest paths do not match the requested book root"
+    end
+    tx.manifest_path = paths.manifest
     if tx.transaction_id ~= id or tx.schema_version ~= 1 then
         return nil, "active transaction manifest identity/version mismatch"
     end
