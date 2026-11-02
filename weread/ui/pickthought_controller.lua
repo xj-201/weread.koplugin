@@ -10,6 +10,8 @@ local function current_file(plugin)
 end
 
 local function current_book_id(plugin)
+    local binding = plugin._annotationBinding and plugin:_annotationBinding()
+    if binding and binding.book_id then return tostring(binding.book_id) end
     return plugin:detectWeReadBook()
 end
 
