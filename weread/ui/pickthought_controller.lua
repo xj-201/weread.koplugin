@@ -233,6 +233,7 @@ function M:_viewPickThoughtComments(book_id, item, popup, request_token)
         local synckey = 0
         local all_items, seen = {}, {}
         local total_count = 0
+        local stopped_before_page_limit = false
 
         for page_index = 1, max_pages do
             local ok, data, err = self.client:get_review_comments(review_id, page_size, {
@@ -267,17 +268,27 @@ function M:_viewPickThoughtComments(book_id, item, popup, request_token)
             end
 
             local raw_count = tonumber(page.raw_count) or #(page.items or {})
-            if raw_count <= 0 then break end
+            if raw_count <= 0 then
+                stopped_before_page_limit = true
+                break
+            end
             offset = offset + raw_count
-            if raw_count < page_size then break end
-            if offset >= total_count and total_count > 0 then break end
+            if raw_count < page_size then
+                stopped_before_page_limit = true
+                break
+            end
+            if offset >= total_count and total_count > 0 then
+                stopped_before_page_limit = true
+                break
+            end
         end
 
+        local final_total = math.max(total_count, #all_items)
         return {
             ok = true,
             items = all_items,
-            total_count = math.max(total_count, #all_items),
-            truncated = math.max(total_count, #all_items) > #all_items,
+            total_count = final_total,
+            truncated = not stopped_before_page_limit or final_total > #all_items,
             review_id = review_id,
         }
     end
