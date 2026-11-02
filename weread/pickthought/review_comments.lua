@@ -186,7 +186,12 @@ function M.normalize_response(data, requested_review_id)
     end
     local raw = extract_comments(data)
     if raw == nil then
-        if type(data.review) == "table" then
+        -- 与 extract_comments/extract_total 的兼容层级保持一致:
+        -- 顶层 review 与 data.review 都可能是合法的无评论详情响应。
+        local has_review = type(data.review) == "table"
+            or (type(data.data) == "table"
+                and type(data.data.review) == "table")
+        if has_review then
             local total = extract_total(data, {})
             return {
                 ok = true,
