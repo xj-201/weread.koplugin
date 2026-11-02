@@ -9,7 +9,7 @@ package.preload["json"] = function()
     return { encode = function() return "{}" end, decode = function() return {} end }
 end
 
-local Transaction = require("weread.pickthought.backup_transaction")
+local Transaction = require("weread.lib.pickthought.backup_transaction")
 local function clone(value)
     if type(value) ~= "table" then return value end
     local out = {}
