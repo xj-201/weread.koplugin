@@ -412,11 +412,16 @@ function M.inject_copy(src, book_id, chapters, opts)
         if not reader_closed then
             detail = (detail and (detail .. ";") or "") .. "reader close: " .. tostring(reader_close_error)
         end
-        local disk_ok, disk_err = pcall(U.remove_tree, disk_tmp)
-        if not disk_ok then
-            detail = (detail and (detail .. ";") or "") .. "中转目录清理异常: " .. tostring(disk_err)
+        local disk_call_ok, disk_removed, disk_err = pcall(U.remove_tree, disk_tmp)
+        if not disk_call_ok or not disk_removed then
+            detail = (detail and (detail .. ";") or "") .. "中转目录清理失败: "
+                .. tostring(disk_call_ok and disk_err or disk_removed)
         end
-        os.remove(tmp)
+        local tmp_removed, tmp_remove_err = os.remove(tmp)
+        if not tmp_removed then
+            detail = (detail and (detail .. ";") or "") .. "临时 EPUB 清理失败: "
+                .. tostring(tmp_remove_err or tmp)
+        end
         local lock_ok, lock_err = release_temp_lock()
         if not lock_ok then
             detail = (detail and (detail .. ";") or "") .. "临时锁清理失败: " .. tostring(lock_err)
