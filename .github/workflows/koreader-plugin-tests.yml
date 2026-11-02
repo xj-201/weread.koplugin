@@ -1,0 +1,48 @@
+name: WeRead plugin checks
+
+on:
+  push:
+    branches:
+      - ci/koreader-plugin-tests
+  pull_request:
+    branches:
+      - feature/read-only-thought-comments
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: weread-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lua-and-database:
+    name: LuaJIT syntax and SQLite migration
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install test dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes luajit python3
+
+      - name: Compile all Lua files with LuaJIT parser
+        shell: bash
+        run: |
+          set -euo pipefail
+          count=0
+          while IFS= read -r -d '' file; do
+            output="$(mktemp)"
+            luajit -b "$file" "$output"
+            rm -f "$output"
+            count=$((count + 1))
+          done < <(find . -type f -name '*.lua' -not -path './.git/*' -print0)
+          echo "LuaJIT syntax check passed for $count Lua files."
+
+      - name: Test legacy SQLite schema migration
+        run: python3 tests/test_thought_db_migration.py
