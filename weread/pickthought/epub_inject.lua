@@ -396,11 +396,26 @@ function M.inject_copy(src, book_id, chapters, opts)
     end
 
     local reader
+    local function close_reader()
+        local current = reader
+        reader = nil
+        if not current then return true end
+        local ok, result = pcall(function() return current:close() end)
+        if not ok then return nil, tostring(result) end
+        if result == false then return nil, "EPUB reader 收尾失败" end
+        return true
+    end
     local function fail(message)
         local detail = writer.err
         local closed, close_error = close_writer()
-        if reader then reader:close() end
-        pcall(U.remove_tree, disk_tmp)
+        local reader_closed, reader_close_error = close_reader()
+        if not reader_closed then
+            detail = (detail and (detail .. ";") or "") .. "reader close: " .. tostring(reader_close_error)
+        end
+        local disk_ok, disk_err = pcall(U.remove_tree, disk_tmp)
+        if not disk_ok then
+            detail = (detail and (detail .. ";") or "") .. "中转目录清理异常: " .. tostring(disk_err)
+        end
         os.remove(tmp)
         local lock_ok, lock_err = release_temp_lock()
         if not lock_ok then
@@ -592,8 +607,10 @@ function M.inject_copy(src, book_id, chapters, opts)
     if not disk_removed then
         return fail("无法清理 EPUB 中转目录:" .. tostring(disk_remove_err or disk_tmp))
     end
-    reader:close()
-    reader = nil
+    local reader_closed, reader_close_error = close_reader()
+    if not reader_closed then
+        return fail("关闭 EPUB 阅读器失败:" .. tostring(reader_close_error))
+    end
 
     -- 未注入 = 唯一划线里既没落锚也没被重叠合并的(跨全部目标文件聚合)。
     for uid, track in pairs(uid_track) do
