@@ -857,7 +857,7 @@ end
 
 function M:getUnifiedAnnotationMenuItems()
     local binding = self:_annotationBinding()
-    return {
+    local items = {
         { text = binding and T(_("Linked WeRead book: %1"), binding.title or binding.book_id)
                 or _("Match with WeRead book"),
             callback = function(menu) self:bindExternalAnnotationsBook(menu) end },
@@ -875,6 +875,12 @@ function M:getUnifiedAnnotationMenuItems()
         { text = _("Clear underlines and thoughts"), callback = function()
             self:clearUnifiedAnnotationProjections() end },
     }
+    if self.getPickThoughtMenuItems then
+        for _, item in ipairs(self:getPickThoughtMenuItems()) do
+            items[#items + 1] = item
+        end
+    end
+    return items
 end
 
 function M:clearUnifiedAnnotationProjections()
