@@ -53,6 +53,7 @@ function Runner.run(plugin, doc_path, book_id, worker_context, options)
     options = options or {}
     local adapter = Adapter:new(plugin)
     local book_dir = adapter:book_dir(book_id)
+    U.mkdir(book_dir)
     local cache_dir = book_dir .. "/pickthought-sync-cache"
     U.mkdir(cache_dir)
 
