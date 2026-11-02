@@ -19,6 +19,32 @@ local function getSQ3()
     return nil
 end
 
+-- Check the live table definition instead of treating every ALTER failure as
+-- an expected duplicate-column error. PRAGMA table_info is supported by the
+-- SQLite versions used by KOReader and returns the column name at row[2].
+local function has_review_id_column(db)
+    local stmt = db:prepare("PRAGMA table_info(review_items)")
+    local found = false
+    local ok, err = pcall(function()
+        local row = stmt:step()
+        while row do
+            if row[2] == "review_id" then
+                found = true
+                break
+            end
+            row = stmt:step()
+        end
+    end)
+    local close_ok, close_err = pcall(function() stmt:close() end)
+    if not ok then
+        error(err)
+    end
+    if not close_ok then
+        error(close_err)
+    end
+    return found
+end
+
 --- Delete thoughts.db and WAL/SHM sidecars. Missing files are ignored.
 function ThoughtDB.remove_db(book_dir)
     if type(book_dir) ~= "string" or book_dir == "" then
@@ -76,9 +102,15 @@ function ThoughtDB.open(book_dir)
             ) WITHOUT ROWID
         ]])
         -- Upgrade existing per-book databases without discarding cached thoughts.
-        pcall(function()
+        -- Do not silently swallow ALTER errors: a failed migration must prevent
+        -- this database from being used with INSERT/SELECT statements that need
+        -- review_id.
+        if not has_review_id_column(db) then
             db:exec("ALTER TABLE review_items ADD COLUMN review_id TEXT NOT NULL DEFAULT ''")
-        end)
+        end
+        if not has_review_id_column(db) then
+            error("review_items.review_id migration did not create the column")
+        end
     end)
     if not schema_ok then
         logger.warn("thought_db schema init failed:", db_path, schema_err)
