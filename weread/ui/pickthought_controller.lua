@@ -258,11 +258,17 @@ function M:_viewPickThoughtComments(book_id, item, popup, request_token)
 
             for _, comment in ipairs(page.items or {}) do
                 local id = tostring(comment.review_id or "")
-                local key = id ~= "" and ("id:" .. id)
-                    or ("text:" .. tostring(comment.author or "") .. "\\0"
-                        .. tostring(comment.content or ""))
-                if not seen[key] then
-                    seen[key] = true
+                if id ~= "" then
+                    -- Only a stable server comment ID is safe for cross-page
+                    -- deduplication. Author + content can legitimately repeat.
+                    local key = "id:" .. id
+                    if not seen[key] then
+                        seen[key] = true
+                        all_items[#all_items + 1] = comment
+                    end
+                else
+                    -- Without an ID, preserve the server row rather than
+                    -- merging distinct comments that happen to share text.
                     all_items[#all_items + 1] = comment
                 end
             end
