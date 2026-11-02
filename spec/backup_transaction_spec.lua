@@ -311,7 +311,7 @@ do
     fs.fail_write = function(path)
         if path:match("/transaction%.json$") then
             tx_manifest_writes = tx_manifest_writes + 1
-            return tx_manifest_writes == 7
+            return tx_manifest_writes == 6
         end
         return false
     end
