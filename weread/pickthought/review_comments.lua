@@ -444,7 +444,11 @@ function Cache:put(review_id, book_id, result, now, ttl, request_version)
         local upsert = db:prepare([[INSERT INTO review_comment_cache
             (review_id, book_id, total_count, payload_json, fetched_at, last_access_at,
                 expires_at, request_version)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            SELECT ?, ?, ?, ?, ?, ?, ?, ?
+            WHERE ? >= COALESCE((
+                SELECT request_version FROM review_comment_cache_requests
+                WHERE review_id = ?
+            ), 0)
             ON CONFLICT(review_id) DO UPDATE SET
                 book_id=excluded.book_id,
                 total_count=excluded.total_count,
@@ -459,7 +463,8 @@ function Cache:put(review_id, book_id, result, now, ttl, request_version)
             ), review_comment_cache.request_version)]])
         upsert:reset():bind(review_id, tostring(book_id or ""),
             total_count, payload,
-            now, now, now + ttl, request_version)
+            now, now, now + ttl, request_version,
+            request_version, review_id)
         upsert:step()
         upsert:close()
 
