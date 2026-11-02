@@ -157,10 +157,18 @@ function Transaction:_rollback(root_manifest_path, root_manifest, tx, paths)
     tx.state = #errors == 0 and "rolled_back" or "rollback_conflict"
     tx.recovery_errors = errors
     local tx_ok, tx_err = self:_write(tx.manifest_path, tx)
-    if not tx_ok then errors[#errors + 1] = "cannot persist rollback result: " .. tostring(tx_err) end
-    if root_manifest then
-        root_manifest.active_transaction_id = nil
-        root_manifest.state = #errors == 0 and "idle" or "recovery_required"
+    if not tx_ok then
+        errors[#errors + 1] = "cannot persist rollback result: " .. tostring(tx_err)
+    end
+    if root_manifest and tx_ok then
+        if #errors == 0 then
+            root_manifest.active_transaction_id = nil
+            root_manifest.state = "idle"
+        else
+            -- Keep the active pointer so a later recovery attempt can retry
+            -- unresolved moves instead of silently orphaning the transaction.
+            root_manifest.state = "recovery_required"
+        end
         root_manifest.last_recovery_transaction_id = tx.transaction_id
         local root_ok, root_err = self:_write(root_manifest_path, root_manifest)
         if not root_ok then errors[#errors + 1] = "cannot persist root recovery state: " .. tostring(root_err) end
@@ -219,6 +227,9 @@ function Transaction:commit(opts)
         if not existing then return nil, "existing root manifest is unreadable: " .. tostring(read_err) end
         if existing.active_transaction_id then
             return nil, "another transaction is active: " .. tostring(existing.active_transaction_id)
+        end
+        if existing.state == "recovery_required" then
+            return nil, "previous transaction requires manual recovery; refusing a new transaction"
         end
         root_manifest.last_committed_transaction_id = existing.last_committed_transaction_id
     end
@@ -344,13 +355,13 @@ function Transaction:recover(root)
     if tx.transaction_id ~= id or tx.schema_version ~= 1 then
         return nil, "active transaction manifest identity/version mismatch"
     end
-    if tx.state == "committed" then
+    if tx.state == "committed" or tx.state == "rolled_back" then
         root_manifest.active_transaction_id = nil
-        root_manifest.last_committed_transaction_id = id
+        if tx.state == "committed" then root_manifest.last_committed_transaction_id = id end
         root_manifest.state = "idle"
         local ok, write_err = self:_write(root_manifest_path, root_manifest)
-        if not ok then return nil, "cannot finalize committed root manifest: " .. tostring(write_err) end
-        return true, "committed transaction finalized"
+        if not ok then return nil, "cannot finalize completed root manifest: " .. tostring(write_err) end
+        return true, tx.state .. " transaction finalized"
     end
     return self:_rollback(root_manifest_path, root_manifest, tx, paths)
 end
