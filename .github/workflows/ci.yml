@@ -50,6 +50,14 @@ jobs:
       - name: Release package smoke test
         run: bash scripts/package_release.sh /tmp/weread.koplugin-release-test.zip
 
+      - name: Upload test package
+        uses: actions/upload-artifact@v4
+        with:
+          name: weread-koplugin-test-${{ github.sha }}
+          path: /tmp/weread.koplugin-release-test.zip
+          if-no-files-found: error
+          retention-days: 7
+
       - name: Release changelog check
         run: |
           version="$(

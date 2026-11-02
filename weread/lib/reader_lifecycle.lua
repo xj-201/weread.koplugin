@@ -111,15 +111,19 @@ function M:onReaderReady()
     self:_installReaderHighlightTapGuard()
 
     local weread_book_id = self:detectWeReadBook()
-    -- Cache it so the per-tap handler (_onThoughtTap) does not have to re-scan
-    -- the whole book table on every screen tap.
-    self._current_weread_book_id = weread_book_id
-    if weread_book_id then
+    local annotation_binding = self._annotationBinding and self:_annotationBinding()
+    local thought_book_id = weread_book_id
+        or (annotation_binding and tostring(annotation_binding.book_id or "") ~= ""
+            and tostring(annotation_binding.book_id) or nil)
+    -- Cache the annotation binding so the per-tap handler can recognize PickThought
+    -- anchors in both downloaded WeRead books and explicitly bound local EPUBs.
+    self._current_weread_book_id = thought_book_id
+    if thought_book_id then
         -- Always register the tap interception: even when annotations are hidden
         -- we must intercept taps on thought links to suppress the native footnote
         -- popup. Visibility is decided inside _onThoughtTap / applyAnnotationVisibility.
         self:_setupThoughtInterception()
-        if self.settings:get("cache").show_annotations ~= false
+        if weread_book_id and self.settings:get("cache").show_annotations ~= false
             and not (self._usesUnifiedAnnotations and self:_usesUnifiedAnnotations()) then
             local db_session_gen = self._reader_session_gen
             UIManager:scheduleIn(0.1, function()
@@ -175,6 +179,16 @@ end
 
 function M:onPosUpdate()
     if self._refreshAnnotationOverlay then self:_refreshAnnotationOverlay() end
+end
+
+function M:onCloseWidget()
+    -- KOReader calls this when the plugin widget is closed/unloaded. Invalidate
+    -- scheduled PickThought callbacks and reap its child workers just as we do
+    -- at a document boundary.
+    self._reader_session_gen = (self._reader_session_gen or 0) + 1
+    self:_teardownThoughtInterception()
+    self:_teardownXPointerOverlayPrototype()
+    self:_removeReaderHighlightTapGuard()
 end
 
 function M:onCloseDocument()
