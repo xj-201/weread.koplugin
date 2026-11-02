@@ -320,16 +320,27 @@ function Cache:get(review_id, now)
         if type(row) == "table" then
             local decoded = Json.decode(tostring(row[2] or ""))
             if type(decoded) == "table" then
-                record = {
-                    items = decoded,
-                    total_count = tonumber(row[1]) or #decoded,
-                    fetched_at = tonumber(row[3]) or now,
-                }
-                local touch = db:prepare(
-                    "UPDATE review_comment_cache SET last_access_at = ? WHERE review_id = ?")
-                touch:reset():bind(now, review_id)
-                touch:step()
-                touch:close()
+                local total = tonumber(row[1]) or #decoded
+                if total > #decoded then
+                    -- Older versions could cache a single prefetch page as if it
+                    -- were the complete comment list. Treat that row as stale.
+                    local discard = db:prepare(
+                        "DELETE FROM review_comment_cache WHERE review_id = ?")
+                    discard:reset():bind(review_id)
+                    discard:step()
+                    discard:close()
+                else
+                    record = {
+                        items = decoded,
+                        total_count = total,
+                        fetched_at = tonumber(row[3]) or now,
+                    }
+                    local touch = db:prepare(
+                        "UPDATE review_comment_cache SET last_access_at = ? WHERE review_id = ?")
+                    touch:reset():bind(now, review_id)
+                    touch:step()
+                    touch:close()
+                end
             end
         end
         stmt:close()
@@ -351,6 +362,9 @@ function Cache:put(review_id, book_id, result, now, ttl)
     if review_id == "" or type(result) ~= "table" or type(result.items) ~= "table" then
         return false
     end
+    local total_count = tonumber(result.total_count) or #result.items
+    -- Never persist a known partial page set (including max-page truncation).
+    if result.truncated == true or total_count > #result.items then return false end
     local db = self:_open()
     if not db then return false end
     local ok, err = pcall(function()
@@ -366,7 +380,7 @@ function Cache:put(review_id, book_id, result, now, ttl)
                 last_access_at=excluded.last_access_at,
                 expires_at=excluded.expires_at]])
         upsert:reset():bind(review_id, tostring(book_id or ""),
-            tonumber(result.total_count) or #result.items, payload,
+            total_count, payload,
             now, now, now + ttl)
         upsert:step()
         upsert:close()
