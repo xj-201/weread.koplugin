@@ -68,10 +68,12 @@ function M:startPickThoughtInjection(options)
         self:showInfo(_("PickThought injection requires an open WeRead EPUB."))
         return false
     end
-    if not self:requireLogin(true, true) then return false end
     if options.offline == nil then
         options.offline = not self:isNetworkConnected()
     end
+    -- 离线续传只读取本地章节/想法缓存，不需要在线登录检查；
+    -- 在线拉取时才验证 WeRead 会话，避免断网时缓存也无法重注。
+    if not options.offline and not self:requireLogin(true, true) then return false end
 
     local worker = self:_pickThoughtWorker()
     if worker:busy() then
@@ -125,6 +127,19 @@ function M:startPickThoughtInjection(options)
             if outcome and outcome.ok and type(outcome.value) == "table"
                 and outcome.value.ok then
                 local report = outcome.value.report or {}
+                if report.deferred then
+                    self:showTransientInfo(_("PickThought task deferred; cached data was retained."), 4)
+                    return
+                end
+                if report.no_changes then
+                    self:showInfo(_("PickThought found no new data to inject."))
+                    return
+                end
+                if report.book_failed or (type(report.failed_books) == "table"
+                    and #report.failed_books > 0) then
+                    self:showInfo(_("PickThought finished with incomplete books; check the task log before using the EPUB copy."))
+                    return
+                end
                 local message = string.format(
                     "PickThought 注入完成。\n拉取划线：%s 条\n成功注入划线：%s 条\n成功注入想法：%s 条\n匹配章节：%s 章\n原书备份：%s\n\n请关闭并重新打开本书以加载新副本。",
                     tostring(report.total_underlines or "—"),
