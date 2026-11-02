@@ -220,7 +220,10 @@ function M.normalize_response(data, requested_review_id)
     }
 end
 
--- SQLite 句柄获取与 thought_db 同款:加载失败返回 nil,调用方按缓存不可用处理。
+-- 多个评论 worker 在独立子进程中共享同一本书的缓存库。
+-- 对短暂 SQLite 锁竞争等待一段时间；不能把 busy/locked 当作数据库损坏。
+local SQLITE_BUSY_TIMEOUT_MS = 5000
+
 local function get_sq3()
     local ok, SQ3 = pcall(require, "lua-ljsqlite3/init")
     if ok and SQ3 then return SQ3 end
@@ -232,20 +235,20 @@ local function open_db(path)
     if not SQ3 then return nil end
     local ok, db = pcall(SQ3.open, path)
     if not ok or not db then return nil end
+    local timeout_ok, timeout_err = pcall(function()
+        db:exec("PRAGMA busy_timeout = " .. SQLITE_BUSY_TIMEOUT_MS)
+    end)
+    if not timeout_ok then
+        pcall(function() db:close() end)
+        logger.warn("[撷思][ReviewComments] 设置 SQLite busy_timeout 失败:",
+            tostring(timeout_err))
+        return nil
+    end
     return db
 end
 
 local function close_db(db)
     if db then pcall(function() db:close() end) end
-end
-
--- 缓存库损坏(打开/建表失败)时删除重建:缓存是可再生数据,允许直接删,
--- 不套 thought_db 的隔离流程(那里保护的是用户想法,这里只是副本)。
-local function destroy_db_file(path)
-    for _, suffix in ipairs({ "", "-wal", "-shm" }) do
-        os.remove(path .. suffix)
-    end
-    logger.warn("[撷思][ReviewComments] 缓存库不可用,已删除重建:", path)
 end
 
 local function ensure_schema(db)
@@ -288,22 +291,17 @@ function Cache.new(opts)
     return self_obj
 end
 
--- 打开缓存库;失败时先删文件重建一次,仍失败则返回 nil(缓存不可用,不阻塞在线加载)。
+-- 打开缓存库。打开或 schema 初始化失败时仅跳过本次缓存操作；
+-- 不能据此认定文件损坏，更不能删除 db/WAL/SHM，因为其他 worker 可能正在使用。
 function Cache:_open()
     if self.path == "" then return nil end
     local db = open_db(self.path)
-    if db then
-        if ensure_schema(db) then return db end
-        close_db(db)
-    end
-    destroy_db_file(self.path)
-    db = open_db(self.path)
     if not db then return nil end
-    if not ensure_schema(db) then
-        close_db(db)
-        return nil
-    end
-    return db
+    if ensure_schema(db) then return db end
+    close_db(db)
+    logger.warn("[撷思][ReviewComments] 缓存库打开/schema 初始化失败，保留原文件并跳过本次缓存操作:",
+        self.path)
+    return nil
 end
 
 local function query_error(stage, detail)
