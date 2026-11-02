@@ -508,9 +508,6 @@ function M:_prefetchPickThoughtCommentCounts(popup, book_id)
         if U.file_exists(result_path) then
             local raw = U.read_file(result_path, true)
             os.remove(result_path)
-            if self._pickthought_comment_prefetch_pid == pid then
-                self._pickthought_comment_prefetch_pid = nil
-            end
             local decoded_ok, results = pcall(Json.decode, raw or "")
             local still_shown = false
             pcall(function() still_shown = UIManager:isWidgetShown(popup) == true end)
@@ -533,7 +530,9 @@ function M:_prefetchPickThoughtCommentCounts(popup, book_id)
                         updated = true
                     end
                 end
-                if updated then popup:refresh_comment_counts() end
+                if updated then
+                    pcall(function() popup:refresh_comment_counts() end)
+                end
             end
             finish_prefetch()
             return
