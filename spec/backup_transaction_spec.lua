@@ -327,4 +327,76 @@ do
     expect(recovered == true, "recovery after rollback should be idempotent: " .. tostring(recovery_message))
 end
 
+-- Recovery must fingerprint doc_path when the current file was checkpointed
+-- for staging but the rename had not happened before the process stopped.
+do
+    local fs = new_fs()
+    local root = "/books/k.epub.pickthought"
+    fs.write("/books/k.epub", "USER-REPLACED")
+    fs.write(root .. "/transactions/current-identity/transaction.json", "placeholder")
+    fs.write(root .. "/manifest.json", "placeholder")
+    local tx = harness(fs, "unused-current-identity")
+    assert(tx:_write(root .. "/transactions/current-identity/transaction.json", {
+        schema_version = 1, transaction_id = "current-identity", state = "staging_current",
+        doc_path = "/books/k.epub", original_changed = false, original_existed_before = false,
+        candidate_fingerprint = "INJECTED-candidate",
+        previous_current_fingerprint = "INJECTED-before",
+    }))
+    assert(tx:_write(root .. "/manifest.json", {
+        schema_version = 1, state = "active", active_transaction_id = "current-identity",
+    }))
+    local ok, err = tx:recover(root .. "/")
+    expect(not ok and tostring(err):match("current EPUB identity mismatch"),
+        "recovery must reject a changed current EPUB before staging: " .. tostring(err))
+    expect(fs.read("/books/k.epub") == "USER-REPLACED", "changed current EPUB must remain untouched")
+end
+
+-- Likewise, a preexisting clean baseline must be fingerprinted if its staging
+-- rename had not happened yet; an unknown replacement must not be accepted.
+do
+    local fs = new_fs()
+    local root = "/books/l.epub.pickthought"
+    fs.write("/books/l.epub", "INJECTED-current")
+    fs.write(root .. "/original.epub", "USER-REPLACED-BASELINE")
+    fs.write(root .. "/transactions/original-identity/transaction.json", "placeholder")
+    fs.write(root .. "/manifest.json", "placeholder")
+    local tx = harness(fs, "unused-original-identity")
+    assert(tx:_write(root .. "/transactions/original-identity/transaction.json", {
+        schema_version = 1, transaction_id = "original-identity", state = "staging_original",
+        doc_path = "/books/l.epub", original_path = root .. "/original.epub",
+        original_changed = true, original_existed_before = true,
+        candidate_fingerprint = "INJECTED-candidate",
+        previous_current_fingerprint = fs.fingerprint("/books/l.epub"),
+        previous_original_fingerprint = "CLEAN-before",
+        new_original_fingerprint = "CLEAN-after",
+    }))
+    assert(tx:_write(root .. "/manifest.json", {
+        schema_version = 1, state = "active", active_transaction_id = "original-identity",
+    }))
+    local ok, err = tx:recover(root)
+    expect(not ok and tostring(err):match("previous original identity mismatch"),
+        "recovery must reject a changed baseline before staging: " .. tostring(err))
+    expect(fs.read(root .. "/original.epub") == "USER-REPLACED-BASELINE",
+        "changed baseline must remain untouched")
+end
+
+-- A root manifest without an active transaction is only valid in the idle
+-- state; malformed state must not be silently overwritten by a new commit.
+do
+    local fs = new_fs()
+    local root = "/books/m.epub.pickthought"
+    fs.write("/books/m.epub", "INJECTED-v1")
+    fs.write("/books/candidate.epub", "INJECTED-v2")
+    local tx = harness(fs, "bad-root-state")
+    assert(tx:_write(root .. "/manifest.json", {
+        schema_version = 1, state = "active", active_transaction_id = nil,
+    }))
+    local result, err = tx:commit{
+        root = root, doc_path = "/books/m.epub", candidate_path = "/books/candidate.epub",
+    }
+    expect(not result and tostring(err):match("not idle"),
+        "commit must reject root manifest with active state but no transaction: " .. tostring(err))
+    expect(fs.read("/books/m.epub") == "INJECTED-v1", "invalid root manifest must not change current EPUB")
+end
+
 print("backup_transaction_spec: " .. checks .. " checks passed")
