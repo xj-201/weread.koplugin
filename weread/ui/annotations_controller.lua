@@ -206,22 +206,16 @@ function M:_installLinkFilter()
     if not self._orig_onTap then
         self._orig_onTap = self.ui.link.onTap
         self.ui.link.onTap = function(link_self, arg, ges)
-            -- When we want to ignore thoughts (edge zone or annotations hidden),
-            -- detect the link with the *original* getter and suppress only our
-            -- current or legacy thought anchors.
-            if (plugin._usesUnifiedAnnotations and plugin:_usesUnifiedAnnotations())
-            or plugin.settings:get("cache").show_annotations == false
-                or isPageTurnEdgeTap(plugin, ges) then
-                local link = plugin._orig_getLinkFromGes(link_self, ges)
-                if link then
-                    local href = plugin:_linkHref(link)
-                    local pickthought = isPickThoughtHref(href)
-                    local hidden = plugin.settings:get("cache").show_annotations == false
-                    local edge = isPageTurnEdgeTap(plugin, ges)
-                    if isThoughtHref(href)
-                        and (not pickthought or hidden or edge) then
-                        return false
-                    end
+            -- PickThought 锚点始终由本插件触摸区处理,不得交给 ReaderLink
+            -- 当作普通文档内链接跳转;旧锚点仍遵循统一标注/隐藏/翻页边缘规则。
+            local link = plugin._orig_getLinkFromGes(link_self, ges)
+            if link then
+                local href = plugin:_linkHref(link)
+                if isPickThoughtHref(href) then return false end
+                if (plugin._usesUnifiedAnnotations and plugin:_usesUnifiedAnnotations())
+                    or plugin.settings:get("cache").show_annotations == false
+                    or isPageTurnEdgeTap(plugin, ges) then
+                    if isThoughtHref(href) then return false end
                 end
             end
             return plugin._orig_onTap(link_self, arg, ges)
