@@ -355,18 +355,19 @@ function Thoughts.merge(store, book_id, chapter_uid, from_range, into_range)
     Thoughts.merge_rows(rows, from_range, into_range)
     -- merge_rows 后:into 原有→rows[2].texts 是合并结果;into 原空→rows[1].range 被改成 into。
     local merged_texts = (#into_texts > 0) and rows[2].texts or rows[1].texts
-    -- 先确认目标写入成功,再删除来源。若写入失败仍删来源会造成想法永久丢失；
-    -- 若删除失败最多留下重复源组,比丢数据安全,下次可再次合并。
+    -- 先写入存活锚点,但不立即删除来源范围。
+    -- Sync 在 EPUB 文件换位前执行 merge;若之后换位失败,旧 EPUB 仍可能引用
+    -- from_range。保留来源行可确保回滚到旧 EPUB 时仍能读到原想法。
+    -- 目标写入使用 review_id/作者+内容去重,因此重试是幂等的;成功换位后遗留的
+    -- 来源行只是不可见的冗余数据,优先保证可恢复性,不冒险提前清理。
     if not ThoughtDB.put_range(db, uid, into_range, merged_texts) then
         logger.warn("[撷思][Thoughts] merge target write failed",
             "book=", tostring(book_id), "chapter=", uid)
         return false
     end
-    if not ThoughtDB.delete_range(db, uid, from_range) then
-        logger.warn("[撷思][Thoughts] merge source cleanup failed; duplicate data retained",
-            "book=", tostring(book_id), "chapter=", uid)
-        return false
-    end
+    logger.info("[撷思][Thoughts] merged range retained for EPUB rollback safety",
+        "book=", tostring(book_id), "chapter=", uid,
+        "from=", from_range, "into=", into_range)
     return true
 end
 
