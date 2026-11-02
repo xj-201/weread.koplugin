@@ -95,6 +95,7 @@ function M:startPickThoughtInjection(options)
 
     local Runner = require("weread.pickthought.sync_runner")
     local request
+    local start_returned = false
     local ok, result = worker:start{
         kind = "pickthought_sync",
         task = function(context)
@@ -110,6 +111,9 @@ function M:startPickThoughtInjection(options)
             dialog:setTitle(title)
         end,
         on_done = function(outcome)
+            -- BackgroundWorker may report worker_unavailable/low_memory
+            -- synchronously from start(); let the caller show that failure once.
+            if not start_returned then return end
             if self._pickthought_request == request then self._pickthought_request = nil end
             if self._pickthought_dialog == dialog then
                 self._pickthought_dialog = nil
@@ -132,6 +136,7 @@ function M:startPickThoughtInjection(options)
             end
         end,
     }
+    start_returned = true
     if not ok then
         self._pickthought_dialog = nil
         pcall(function() dialog:close() end)
