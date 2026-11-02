@@ -587,7 +587,10 @@ function M.inject_copy(src, book_id, chapters, opts)
             end
         end
     end
-    U.remove_tree(disk_tmp)
+    local disk_removed, disk_remove_err = U.remove_tree(disk_tmp)
+    if not disk_removed then
+        return fail("无法清理 EPUB 中转目录:" .. tostring(disk_remove_err or disk_tmp))
+    end
     reader:close()
     reader = nil
 
