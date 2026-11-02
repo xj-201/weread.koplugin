@@ -556,14 +556,21 @@ function M:_prefetchPickThoughtCommentCounts(popup, book_id)
                 schedule_retry(pending)
             elseif still_shown and popup_is_current()
                 and decoded_ok and type(results) == "table" then
-                local counts, retry_ids = {}, {}
+                local counts, retry_ids, returned_ids = {}, {}, {}
                 for _, row in ipairs(results) do
                     local id = tostring(row.review_id or "")
+                    if id ~= "" then returned_ids[id] = true end
                     if row.ok == true then
                         counts[id] = tonumber(row.total_count) or 0
                     elseif row.error == "network" then
                         retry_ids[id] = true
                     end
+                end
+                -- If the child failed partway through its batch, absent rows
+                -- are worker failures, not confirmed zero-comment responses.
+                for _, item in ipairs(pending) do
+                    local id = tostring(item.review_id or "")
+                    if not returned_ids[id] then retry_ids[id] = true end
                 end
                 local updated = false
                 for _, item in ipairs(pending) do
