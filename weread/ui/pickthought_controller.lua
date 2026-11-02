@@ -69,6 +69,9 @@ function M:startPickThoughtInjection(options)
         return false
     end
     if not self:requireLogin(true, true) then return false end
+    if options.offline == nil then
+        options.offline = not self:isNetworkConnected()
+    end
 
     local worker = self:_pickThoughtWorker()
     if worker:busy() then
