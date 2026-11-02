@@ -1542,6 +1542,7 @@ function Sync.run(deps)
                     if not backup_staged then
                         return "新 .orig 备份清理失败(" .. tostring(backup_err or "未知") .. ")"
                             .. ";请检查 " .. backup
+                            .. (prior_backup_to_restore and (";历史备份仍保留于 " .. prior_backup_to_restore) or "")
                     end
                     return "旧 .orig 备份自动恢复失败(" .. tostring(backup_err or "未知") .. ")"
                         .. ";候选旧备份仍在 " .. old_backup
@@ -1654,6 +1655,7 @@ function Sync.run(deps)
                     else
                         rb_hint = "新 .orig 备份清理失败(" .. tostring(rb_err or "未知")
                             .. "),请检查 " .. backup
+                            .. (prior_backup_to_restore and (";历史备份仍保留于 " .. prior_backup_to_restore) or "")
                     end
                 end
                 if copy_status == "cancelled" then
@@ -1673,7 +1675,14 @@ function Sync.run(deps)
                 -- 新副本再恢复旧 .orig(.orig.old → .orig)。
                 local rb_ok, rb_err = rollback_clean_backup()
                 if rb_ok then
-                    local rb_hint = backup_staged and "已回滚旧 .orig 备份并清理新副本" or "已清理新 .orig 备份"
+                    local rb_hint
+                    if backup_staged then
+                        rb_hint = "已回滚旧 .orig 备份并清理新副本"
+                    elseif prior_backup_to_restore then
+                        rb_hint = "已清理新 .orig 备份并恢复此前 .orig.old"
+                    else
+                        rb_hint = "已清理新 .orig 备份"
+                    end
                     return nil, "干净源已固化但无法暂存当前书(.old)," .. rb_hint .. ";"
                         .. "请关闭本书或确认未被占用后重试"
                 end
