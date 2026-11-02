@@ -142,19 +142,17 @@ end
 
 --- 长按想法的动作菜单:查看评论(无 review_id 置灰)/复制/生成二维码。
 function BaseThoughtPopupWidget:_showThoughtActionMenu(item)
+    -- WeRead 整合版只保留「查看评论」入口；独立撷思的复制/二维码
+    -- 等附加操作不属于本次整合范围。
+    if self._comment_view then return end
     local popup = self
-    -- 评论入口可用性(实施文档 §4):需要回调注入且该想法带 review_id;
-    -- 不可用时仍显示菜单项但置灰,让用户知道是数据缺少评论 ID。
     local viewable = type(popup.on_view_comments) == "function"
         and type(item) == "table"
         and type(item.review_id) == "string"
         and item.review_id ~= ""
     local action_dialog
-    -- 评论视图里没有"评论的评论"(用户拍板 2026-09-06):评论是最后一层,
-    -- 菜单不再提供查看评论入口(评论层仍保留复制/二维码)。
-    local button_rows = {}
-    if not self._comment_view then
-        button_rows[#button_rows + 1] = {
+    action_dialog = ButtonDialog:new{
+        buttons = { {
             {
                 text = _("查看评论"),
                 enabled = viewable,
@@ -163,26 +161,7 @@ function BaseThoughtPopupWidget:_showThoughtActionMenu(item)
                     popup:_openItemComments(item)
                 end,
             },
-        }
-    end
-    button_rows[#button_rows + 1] = {
-        {
-            text = _("复制"),
-            callback = function()
-                UIManager:close(action_dialog)
-                popup:_copyThoughtContent(item)
-            end,
-        },
-        {
-            text = _("生成二维码"),
-            callback = function()
-                UIManager:close(action_dialog)
-                popup:_generateQRCode(item)
-            end,
-        },
-    }
-    action_dialog = ButtonDialog:new{
-        buttons = button_rows,
+        } },
     }
     UIManager:show(action_dialog)
 end
