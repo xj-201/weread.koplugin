@@ -340,6 +340,8 @@ function M.inject_copy(src, book_id, chapters, opts)
     local tmp = dest .. ".tmp-" .. tostring(mtime)
     local writer = mod.Writer:new{}
     if not writer:open(tmp, "epub") then
+        -- open 失败也可能已创建/截断了部分临时文件;清理本次专属路径,不触碰 src/dest。
+        os.remove(tmp)
         return nil, "无法创建副本:" .. tostring(writer.err or tmp)
     end
     local function close_writer()
