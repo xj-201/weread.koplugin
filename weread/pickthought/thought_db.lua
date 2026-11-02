@@ -650,24 +650,38 @@ function ThoughtDB.put_chapter(db, chapter_uid, groups)
     return true
 end
 
--- 替换一个 range 的想法(texts = {content,abstract,author,likes,review_id} 列表)。
-function ThoughtDB.put_range(db, chapter_uid, range_str, texts)
+-- 在同一事务内替换多个 range。用于一章中多条重叠划线合并,避免部分提交。
+-- replacements = { {range="...", texts={...}}, ... };来源范围不在此处删除。
+function ThoughtDB.put_ranges(db, chapter_uid, replacements)
     if not db then return false end
-    chapter_uid, range_str = tostring(chapter_uid or ""), tostring(range_str or "")
+    chapter_uid = tostring(chapter_uid or "")
     local ok, err = pcall(function()
         db:exec("BEGIN")
-        local deleted, delete_err = run_bound_statement(db,
-            "DELETE FROM review_items WHERE chapter_uid=? AND range=?", chapter_uid, range_str)
-        if not deleted then error(delete_err) end
-        insert_rows(db, chapter_uid, { { range = range_str, texts = texts } })
+        for _, replacement in ipairs(replacements or {}) do
+            local range = tostring(type(replacement) == "table" and replacement.range or "")
+            if range == "" then error("目标 range 为空") end
+            local deleted, delete_err = run_bound_statement(db,
+                "DELETE FROM review_items WHERE chapter_uid=? AND range=?", chapter_uid, range)
+            if not deleted then error(delete_err) end
+            insert_rows(db, chapter_uid, {
+                { range = range, texts = type(replacement) == "table" and replacement.texts or {} },
+            })
+        end
         db:exec("COMMIT")
     end)
     if not ok then
         pcall(function() db:exec("ROLLBACK") end)
-        logger.warn("[撷思][ThoughtDB] put_range failed", tostring(err))
+        logger.warn("[撷思][ThoughtDB] put_ranges failed", tostring(err))
         return false
     end
     return true
+end
+
+-- 单 range 接口保留,内部复用批量事务实现。
+function ThoughtDB.put_range(db, chapter_uid, range_str, texts)
+    return ThoughtDB.put_ranges(db, chapter_uid, {
+        { range = tostring(range_str or ""), texts = texts },
+    })
 end
 
 -- 查一个 range 的全部想法,返回 texts 列表(同 compact_group 输出的 texts 形状)。
