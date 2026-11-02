@@ -181,6 +181,16 @@ function M:onPosUpdate()
     if self._refreshAnnotationOverlay then self:_refreshAnnotationOverlay() end
 end
 
+function M:onCloseWidget()
+    -- KOReader calls this when the plugin widget is closed/unloaded. Invalidate
+    -- scheduled PickThought callbacks and reap its child workers just as we do
+    -- at a document boundary.
+    self._reader_session_gen = (self._reader_session_gen or 0) + 1
+    self:_teardownThoughtInterception()
+    self:_teardownXPointerOverlayPrototype()
+    self:_removeReaderHighlightTapGuard()
+end
+
 function M:onCloseDocument()
     -- Capture the immutable local position while the document is still alive.
     -- The network upload is scheduled; stopping ReadReport below also frees any
