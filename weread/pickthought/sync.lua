@@ -1241,10 +1241,10 @@ function Sync.run(deps)
         :gsub("[^%w%-]", "")
     local temp_dest = doc_path .. ".pickthought-new-" .. temp_suffix
     local stats, inject_err = deps.inject(src, book_ids[1], mapped, temp_dest,
-        {append = append, meta = meta, book_ids = book_ids, progress = report_inject_progress})
+        {append = append, meta = meta, book_ids = book_ids, temp_suffix = temp_suffix,
+            progress = report_inject_progress})
     if not stats then
-        -- 注入器通常会清理自身的 .tmp-*;这里额外清理本层固定中间路径,
-        -- 防止上次异常退出留下的 .pickthought-new 被误认为本次产物。
+        -- 中间输出带本次 worker token;这里只清理本任务自己的产物。
         local cleanup_ok, cleanup_err = remove(temp_dest)
         if not cleanup_ok then
             logger.warn("[撷思][Sync] failed injection temp cleanup",
