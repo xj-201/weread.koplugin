@@ -356,6 +356,7 @@ function M.inject_copy(src, book_id, chapters, opts)
     if not mod then return nil, arc_err end
 
     local dest = opts.dest or M.copy_path(src)
+    local mtime = now() -- ZIP 条目时间戳/marker 时间仍使用原有秒级时间,与临时路径 token 分离。
     local tmp, disk_tmp, temp_lock, reserve_err = reserve_temp_paths(dest, now)
     if not tmp then return nil, "无法分配 EPUB 临时路径:" .. tostring(reserve_err) end
     local function release_temp_lock()
