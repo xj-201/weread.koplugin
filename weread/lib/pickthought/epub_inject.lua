@@ -189,36 +189,6 @@ local function range_of(row)
     return (kind == "string" or kind == "number") and tostring(value) or ""
 end
 
-local function count_occurrences(text, needle)
-    local n, from = 0, 1
-    while true do
-        local at = text:find(needle, from, true)
-        if not at then return n end
-        n = n + 1
-        from = at + #needle
-    end
-end
-
--- 实际落进正文的锚点数:按划线 range 逐个对比注入前后 data-pickthought-range 的出现次数。
--- (annotations 的 dropped 不含去重叠环节丢弃的划线,直接数结果才准;
--- 同一文件叠加多章时按出现次数差对比,跨章同 range 键也不误判。)
--- 第二返回值:落锚的 range 键集合,供跨文件聚合「唯一划线」的着落。
-local function count_marks(rendered, underlines, base)
-    local n, seen, hit = 0, {}, {}
-    for _, row in ipairs(underlines or {}) do
-        local key = range_of(row)
-        if key ~= "" and not seen[key] then
-            seen[key] = true
-            local needle = 'data-pickthought-range="' .. key .. '"'
-            if count_occurrences(rendered, needle) > (base and count_occurrences(base, needle) or 0) then
-                n = n + 1
-                hit[key] = true
-            end
-        end
-    end
-    return n, hit
-end
-
 local function chapter_data(book_id, ch)
     -- 多书合并注入时,每个 mapped 章节自带 ch.book_id;单书场景回退到入参 book_id。
     book_id = ch.book_id or book_id
@@ -589,6 +559,7 @@ function M.inject_copy(src, book_id, chapters, opts)
                         if progress_result == false then return fail("已取消") end
                     end
                     local content_bytes = #content
+                    -- luacheck: ignore 311
                     content = nil
                     gc_policy:release(content_bytes)
                 else

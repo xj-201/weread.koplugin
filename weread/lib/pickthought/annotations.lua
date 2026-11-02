@@ -297,7 +297,7 @@ local function locate_subsequence(index, needle, expected)
     local skip_limit = math.max(FUZZY_SKIP_FLOOR, math.floor(#needle / 3))
     local skipped = 0
     local j = 1
-    i = pos
+    local i = pos
     while j <= #needle do
         if i > #text then return nil end
         if text:byte(i) == needle:byte(j) then

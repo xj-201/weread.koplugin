@@ -224,11 +224,11 @@ function WebFetch:fetch_chapter(book_id, uid, progress)
                 depth > 0 and ("缩小想法批次至 " .. tostring(#batch)) or "", {
                     current_underlines = #marks_rows, current_thoughts = all_review_entries,
                 })
-            local ok, resp = pcall(function()
+            local request_ok, resp = pcall(function()
                 return self.api:readreviews(book_id, chapter_uid, batch)
             end)
             local accepted, added = false, 0
-            if ok then accepted, added = append_reviews(resp) end
+            if request_ok then accepted, added = append_reviews(resp) end
             if accepted then
                 all_review_entries = all_review_entries + (added or 0)
                 progress("thoughts", index, #batches, "", {

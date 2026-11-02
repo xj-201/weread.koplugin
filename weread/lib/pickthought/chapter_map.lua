@@ -615,11 +615,11 @@ local function build_with_scanner(spine, chapters, scan, options)
                 for _ in pairs(target_set or {}) do metrics.fallback_chapters = metrics.fallback_chapters + 1 end
             end
             -- 命中计数:本文件为任一目标贡献了候选 → 连续命中 +1,否则清零。
-            local contributed = false
-            for _ in pairs(candidates) do contributed = true; break end
+            local contributed = next(candidates) ~= nil
             if contributed then recent_hit_streak = recent_hit_streak + 1
             else recent_hit_streak = 0 end
         end
+        -- luacheck: ignore 311
         text = nil
         collectgarbage("step", 400)
         if not checkpoint() then return false end

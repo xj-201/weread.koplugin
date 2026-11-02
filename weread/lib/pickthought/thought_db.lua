@@ -42,8 +42,9 @@ end
 local function get_user_version(db)
     local ok, stmt = pcall(function() return db:prepare("PRAGMA user_version") end)
     if not ok or not stmt then return 0 end
-    local _ok, row = pcall(function() return stmt:step() end)
+    local step_ok, row = pcall(function() return stmt:step() end)
     pcall(function() stmt:close() end)
+    if not step_ok then return 0 end
     return (row and tonumber(row[1])) or 0
 end
 

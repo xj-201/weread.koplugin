@@ -1,7 +1,7 @@
 -- 轻量调试观测:默认关闭,由设置中的 debug_mode 控制。
 local logger = require("weread.lib.logger")
 
-local unpack_args = unpack or table.unpack
+local unpack_args = unpack
 local time_module
 local request_id
 local request_seq = 0

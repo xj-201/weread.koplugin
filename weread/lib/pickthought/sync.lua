@@ -126,11 +126,11 @@ function Sync.run(deps)
     -- 多书合并注入必须基于干净 .orig 整体重建,不能走增量 append(否则漏书)。
     local doc_path = tostring(deps.doc_path)
     local backup = Sync.backup_path(doc_path)
+    local old_backup = backup .. ".old"
     -- 恢复 .orig.old 时先验证它确实是可用的干净 EPUB。
     -- 若标准 .orig 已存在,先将其改名保留,绝不先删除唯一可能有效的备份；
     -- 恢复失败时尝试把被保留的 .orig 放回原位。
     local function restore_backup_old()
-        local old_backup = backup .. ".old"
         if not file_exists(old_backup) then return true end
 
         local old_call_ok, old_meta, old_meta_err = pcall(deps.load_meta, old_backup)
@@ -173,7 +173,7 @@ function Sync.run(deps)
         return nil, tostring(restore_err or "恢复 .orig.old 失败")
             .. (kept_backup and ";原 .orig 已回滚" or "")
     end
-    local current_meta, current_meta_err = deps.load_meta(doc_path)
+    local current_meta = deps.load_meta(doc_path)
     -- 当前 EPUB 存在但解析失败(损坏):绝不能当作"干净原书"继续,
     -- 否则下面 rename(doc_path, backup) 会把损坏文件当原书备份/销毁(P1#2, 2026-08-15 二轮)。
     -- 必须在任何 rename/copy 前中止,且保证 doc_path/.orig/.old 都不被改动。
@@ -338,8 +338,6 @@ function Sync.run(deps)
         -- 本章是否已被实际注入/保存(用于区分「失败前有无有效产出」)。
         -- 失败且未贡献任何章节 → 单书致命 / 多书软失败;失败但已有贡献 → 部分提交。
         local book_contributed = false
-        local appended_this_chapter = nil
-        local book_last_contrib_resumed = false  -- 最近一次贡献章节是否断点缓存命中(决定硬失败后是否部分提交)
         local book_failed, book_failed_index, book_failed_reason
         -- 想法缓存写入失败:本章划线已注入,但该书本轮未真正完成,须禁止生成 .completed
         -- 并保留当前章续传位置(评审十轮 P1#2)。
@@ -414,6 +412,7 @@ function Sync.run(deps)
                 book_rate_limited = true
                 book_rate_limit_wait = tonumber(data.rate_limit_wait) or book_rate_limit_wait
         elseif good and type(data) == "table" and data.resumed and skip_resumed and not multi_book then
+            logger.debug("[撷思][Sync] 跳过已完成缓存章节", ch.title)
             -- 单书增量续传:当前注入版已含旧批内容,完整缓存只扫描寻找新增/缺失章节,
             -- 不重复写库和重注入旧章节。多书场景恒为全量重建(append=false/.orig),
             -- 旧批内容不在当前书,必须随本次重建重新注入,故多书不在此跳过、走下一分支
@@ -458,7 +457,7 @@ function Sync.run(deps)
                 progress_metrics.book_fetch_thoughts = book_fetch_thoughts
                 resource_budget:account(data)
                 local compact = SyncBudget.compact(data)
-                appended_this_chapter = nil
+                local appended_this_chapter = false
                 if (data.underline_count or 0) > 0 then
                     appended_this_chapter = true
                     fetched[#fetched + 1] = {
@@ -474,7 +473,6 @@ function Sync.run(deps)
                         cache_bytes = compact.cache_bytes,
                     }
                     book_contributed = true
-                    book_last_contrib_resumed = data.resumed == true
                 end
                 if #(data.review_groups or {}) > 0 then
                     local ok_save, saved = pcall(deps.save_thoughts, ch.book_id, ch.uid, data.review_groups)
@@ -554,6 +552,7 @@ function Sync.run(deps)
                 book_pending = book_pending + (#chapter_list - book_next + 1)
                 break
             end
+            -- luacheck: ignore 311
             data = nil
             collectgarbage("step", 1200)
             i = i + 1
@@ -1354,7 +1353,6 @@ function Sync.run(deps)
     -- 将现有 .orig 暂存到 .orig.old 前,先保留可能存在的上一份 .orig.old。
     -- 旧暂存文件即使看起来陈旧,也不能在未确认前直接删除。
     local function stage_clean_backup()
-        local old_backup = backup .. ".old"
         local had_backup = file_exists(backup)
         local kept_old
         if file_exists(old_backup) then
@@ -1415,11 +1413,12 @@ function Sync.run(deps)
                 -- 恢复后重新解析当前书(可能是注入版或干净书),统一走下方分支;
                 -- 解析失败(恢复副本损坏)必须中止并保留恢复出的文件,绝不把损坏副本
                 -- 当干净书继续,否则成功后会清掉最后一份可恢复文件(作者 2026-08-20 第7轮意见①)。
-                current_meta, current_meta_err = deps.load_meta(doc_path)
+                local restored_meta, restored_meta_err = deps.load_meta(doc_path)
+                current_meta = restored_meta
                 if not current_meta then
                     remove(temp_dest)
                     return nil, "中断残留已恢复(" .. tostring(old_path) .. " → " .. tostring(doc_path)
-                        .. "),但恢复出的副本无法解析(" .. tostring(current_meta_err or "未知") .. ");"
+                        .. "),但恢复出的副本无法解析(" .. tostring(restored_meta_err or "未知") .. ");"
                         .. "已中止后续流程并保留该文件,请更换可用干净源后重试"
                 end
             else
@@ -1441,9 +1440,7 @@ function Sync.run(deps)
                     remove(temp_dest)
                     return nil, "暂存文件 " .. old_path
                         .. " 无法解析,已保留且中止操作;请先人工确认或恢复该文件"
-                elseif not (old_meta.has and old_meta.has[EpubInject.MARKER] == true) then
-                    -- 保留的原始干净书:不在此清理,留待下方分支处理。
-                else
+                elseif old_meta.has and old_meta.has[EpubInject.MARKER] == true then
                     local ok_rm, rm_err = remove(old_path)
                     if not ok_rm then
                         remove(temp_dest)
@@ -1459,7 +1456,7 @@ function Sync.run(deps)
             and current_meta.has[EpubInject.MARKER] == true
         if is_current_injected then
             -- 脏注入版先暂存为 .old 以便失败回滚,再把干净源固化为 .orig 备份。
-            local old_path = doc_path .. ".old"
+            old_path = doc_path .. ".old"
             if file_exists(old_path) then
                 -- 关键 P1 修复(作者文件保留边界):若已存在的 .old 是上一次重建保留的
                 -- 原始干净书(无注入 MARKER,来自"当前书是干净原书"分支的 kept_original),
@@ -1487,7 +1484,7 @@ function Sync.run(deps)
                     end
                     kept_original = kept_path
                 else
-                    local ok_rm, rm_err = remove(old_path)
+                    local ok_rm = remove(old_path)
                     if not ok_rm then
                         remove(temp_dest)
                         return nil, "无法清理旧的暂存文件,请重试"
@@ -1527,7 +1524,7 @@ function Sync.run(deps)
                 end
                 return nil, "无法暂存原注入版,且旧 .orig 备份回滚失败(" .. tostring(rb_err or "未知") .. ")"
             end
-            local ok_copy, copy_err, copy_status = copy_file(clean_source, backup)
+            local ok_copy, _, copy_status = copy_file(clean_source, backup)
             if not ok_copy then
                 remove(temp_dest)
                 local backup_ok, backup_err = rollback_clean_backup()
@@ -1573,7 +1570,7 @@ function Sync.run(deps)
             -- 当前书是干净原书,且指定了外部 clean_source(可能与当前书版本不同)。
             -- 统一注入基线:.orig 必须是注入基线 clean_source(而非当前不同版本的书),
             -- 并把当前书暂存为 .old 保留,避免用户打开的版本被覆盖销毁(作者意见 #4)。
-            local old_path = doc_path .. ".old"
+            old_path = doc_path .. ".old"
             if file_exists(old_path) then
                 -- 前置恢复检查可能认定 .old 是此前保留的干净原书。
                 -- 此处不能再无条件删除;损坏/无法解析的副本也先保留并中止。
@@ -1596,7 +1593,6 @@ function Sync.run(deps)
                         return nil, "无法保留旧的干净原书(" .. old_path .. "→" .. kept_path
                             .. "):" .. tostring(kept_err or "重命名失败")
                     end
-                    if not kept_original then kept_original = kept_path end
                 else
                     local ok_rm, rm_err = remove(old_path)
                     if not ok_rm then
@@ -1630,7 +1626,7 @@ function Sync.run(deps)
                 return true
             end
             -- 固化注入基线(clean_source)为 .orig,使最终 .orig 与注入源一致(作者意见 #4)。
-            local ok_copy, copy_err, copy_status = copy_file(clean_source, backup)
+            local ok_copy, _, copy_status = copy_file(clean_source, backup)
             if not ok_copy then
                 remove(temp_dest)
                 -- 旧 .orig(.orig.old)必须还原为标准路径,否则后续直接重注误报缺备份
@@ -1779,7 +1775,6 @@ function Sync.run(deps)
             end
         end
     end
-    local old_backup = backup .. ".old"
     if file_exists(old_backup) then
         local ok_rm = remove(old_backup)
         if not ok_rm then

@@ -93,7 +93,7 @@ local function sanitize_content(value)
     return text
 end
 
-function extract_comment(entry)
+local function extract_comment(entry)
     if type(entry) ~= "table" then return nil end
     local user = type(entry.user) == "table" and entry.user or {}
     local author_obj = type(entry.author) == "table" and entry.author or {}
@@ -508,7 +508,7 @@ function Cache:purge_expired(now)
     now = tonumber(now) or os.time()
     local db = self:_open()
     if not db then return false end
-    local ok, err = pcall(function()
+    local ok = pcall(function()
         local stmt = db:prepare("DELETE FROM review_comment_cache WHERE expires_at <= ?")
         stmt:reset():bind(now)
         stmt:step()
