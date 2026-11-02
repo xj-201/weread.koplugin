@@ -287,7 +287,19 @@ function M:_viewPickThoughtComments(book_id, item, popup)
             end
             return
         end
-        UIManager:scheduleIn(os.time() > deadline and 5 or 0.5, poll)
+        if os.time() >= deadline then
+            -- 超时后必须终止子进程并结束轮询；原逻辑会每 5 秒永久轮询，
+            -- 让弹窗一直停留在"正在加载评论…"。
+            if type(FFIUtil.terminateSubProcess) == "function" then
+                pcall(FFIUtil.terminateSubProcess, pid)
+            end
+            os.remove(result_path)
+            if popup and popup._showCommentNotice then
+                popup:_showCommentNotice(ReviewComments.message_for("network"))
+            end
+            return
+        end
+        UIManager:scheduleIn(0.5, poll)
     end
     UIManager:scheduleIn(0.5, poll)
     return nil
