@@ -143,7 +143,7 @@ function Transaction:_rollback(root_manifest_path, root_manifest, tx, paths)
                 move_owned(paths.previous_original, tx.original_path,
                     tx.previous_original_fingerprint, "previous original")
             end
-        elseif tx.previous_original_fingerprint == nil and self.exists(tx.original_path) then
+        elseif not tx.original_existed_before and self.exists(tx.original_path) then
             local original_fp = self:_fingerprint(tx.original_path)
             if original_fp == tx.new_original_fingerprint and not self.exists(paths.failed_original) then
                 local moved, move_err = call_ok(self.rename, tx.original_path, paths.failed_original)
@@ -210,6 +210,7 @@ function Transaction:commit(opts)
         operation = opts.operation or (original_changed and "rebuild" or "append"),
         state = "preparing", doc_path = doc_path, original_path = original_path,
         original_changed = original_changed,
+        original_existed_before = original_changed and self.exists(original_path) or false,
         files = {
             candidate = "candidate.epub", previous_current = "previous-current.epub",
             new_original = original_changed and "new-original.epub" or nil,
