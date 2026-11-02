@@ -173,7 +173,7 @@ end
 do
     local fs = new_fs()
     fs.write("/books/e.epub", "USER-CHANGED")
-    fs.write("/books/candidate.epub", "INJECTED-new")
+    fs.write("/books/candidate.epub", "BROKEN-candidate")
     local tx = harness(fs, "conflict")
     local result = tx:commit{
         root = "/books/e.epub.pickthought", doc_path = "/books/e.epub",
@@ -181,6 +181,40 @@ do
     }
     expect(not result, "invalid candidate should not commit")
     expect(fs.read("/books/e.epub") == "USER-CHANGED", "unknown current data preserved")
+end
+
+
+-- Recovery after a simulated process stop at current_staged restores the
+-- previous current file, persists rolled_back, and is idempotent.
+do
+    local fs = new_fs()
+    fs.write("/books/f.epub.pickthought/transactions/recover-1/previous-current.epub", "INJECTED-before")
+    fs.write("/books/f.epub.pickthought/transactions/recover-1/candidate.epub", "INJECTED-after")
+    local tx = harness(fs, "unused-id")
+    local paths = {
+        manifest = "/books/f.epub.pickthought/transactions/recover-1/transaction.json",
+    }
+    local root = "/books/f.epub.pickthought"
+    fs.write(root .. "/transactions/recover-1/transaction.json", "placeholder")
+    fs.write(root .. "/manifest.json", "placeholder")
+    local tx_manifest = {
+        schema_version = 1, transaction_id = "recover-1", state = "current_staged",
+        doc_path = "/books/f.epub", original_changed = false,
+        candidate_fingerprint = fs.fingerprint(root .. "/transactions/recover-1/candidate.epub"),
+        previous_current_fingerprint = fs.fingerprint(root .. "/transactions/recover-1/previous-current.epub"),
+    }
+    local root_manifest = {
+        schema_version = 1, state = "active", active_transaction_id = "recover-1",
+        last_committed_transaction_id = nil,
+    }
+    assert(tx:_write(paths.manifest, tx_manifest))
+    assert(tx:_write(root .. "/manifest.json", root_manifest))
+    local ok, message = tx:recover(root)
+    expect(ok == true, "recovery should restore staged current: " .. tostring(message))
+    expect(fs.read("/books/f.epub") == "INJECTED-before", "recovery restores previous current")
+    local second, second_message = tx:recover(root)
+    expect(second == true, "second recovery should be harmless: " .. tostring(second_message))
+    expect(fs.read("/books/f.epub") == "INJECTED-before", "repeated recovery leaves current unchanged")
 end
 
 print("backup_transaction_spec: " .. checks .. " checks passed")
