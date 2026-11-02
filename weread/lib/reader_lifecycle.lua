@@ -123,7 +123,7 @@ function M:onReaderReady()
         -- we must intercept taps on thought links to suppress the native footnote
         -- popup. Visibility is decided inside _onThoughtTap / applyAnnotationVisibility.
         self:_setupThoughtInterception()
-        if self.settings:get("cache").show_annotations ~= false
+        if weread_book_id and self.settings:get("cache").show_annotations ~= false
             and not (self._usesUnifiedAnnotations and self:_usesUnifiedAnnotations()) then
             local db_session_gen = self._reader_session_gen
             UIManager:scheduleIn(0.1, function()
