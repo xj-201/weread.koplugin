@@ -1,0 +1,370 @@
+local M = {}
+
+M.MARKER_BEGIN = "/* MIUREAD_ANNOTATION_STYLE_V2_BEGIN */"
+M.MARKER_END = "/* MIUREAD_ANNOTATION_STYLE_V2_END */"
+
+-- Keep this intentionally close to the proven weread implementation.
+-- The thought text uses its own class, so it can never inherit the solid
+-- underline rule used by ordinary WeRead marks.
+M.CSS = [[
+/* MIUREAD_ANNOTATION_STYLE_V2_BEGIN */
+.pickthought-inline-mark {
+    text-decoration: underline;
+}
+.pickthought-link {
+    text-decoration: none;
+    color: inherit;
+}
+.pickthought-mark {
+    border-bottom: 2px dashed #ff6b35;
+    padding-bottom: 2px;
+    color: inherit;
+}
+/* MIUREAD_ANNOTATION_STYLE_V2_END */
+]]
+
+M.INLINE_STYLE_ID = "pickthought-annotation-style"
+
+-- Runtime choices override the shared annotation classes in the open document.
+-- The EPUB keeps M.CSS as the stable fallback for offline reading. default 也
+-- 必须走 runtime 通道(真机反馈 2026-09-13):「内嵌样式」开关关闭的是作者层
+-- CSS,注入的内联样式随之失效,默认虚线会回落成 KOReader 默认层 a[href] 的
+-- 实线下划线;非默认档因有 runtime 覆盖而免疫该开关。这里只覆盖线条属性,
+-- 不写 color——颜色统一由文字样式块负责(text_runtime_css 拼接在其后)。
+M.DEFAULT_RUNTIME_STYLE = "default"
+M.RUNTIME_STYLE_CHOICES = {
+    "default",
+    "thin_solid",
+    "thin_dashed",
+}
+
+-- P5/Issue #23:划线文字样式(与线条样式正交)。默认"跟随正文"用 !important
+-- 强制继承——书自带内嵌 CSS 的链接色规则(特异性可高于 (0,1,0))与 KOReader
+-- 默认层 epub.css 的 a[href]{color:navy}(内嵌样式关闭时生效)都无法再染灰
+-- 带想法的划线文字。
+M.DEFAULT_TEXT_STYLE = "normal"
+M.TEXT_STYLE_CHOICES = {
+    "normal",
+    "bold",
+    "gray",
+    "italic",
+}
+
+local TEXT_RUNTIME_CSS = {
+    normal = [[
+/* PICKTHOUGHT_RUNTIME_TEXT_STYLE_BEGIN */
+.pickthought-inline-mark,
+.pickthought-link,
+.pickthought-mark {
+    color: inherit !important;
+    font-weight: inherit !important;
+}
+/* PICKTHOUGHT_RUNTIME_TEXT_STYLE_END */
+]],
+    bold = [[
+/* PICKTHOUGHT_RUNTIME_TEXT_STYLE_BEGIN */
+.pickthought-inline-mark,
+.pickthought-link,
+.pickthought-mark {
+    color: inherit !important;
+    font-weight: bold !important;
+}
+/* PICKTHOUGHT_RUNTIME_TEXT_STYLE_END */
+]],
+    gray = [[
+/* PICKTHOUGHT_RUNTIME_TEXT_STYLE_BEGIN */
+.pickthought-inline-mark,
+.pickthought-link,
+.pickthought-mark {
+    color: #888888 !important;
+}
+/* PICKTHOUGHT_RUNTIME_TEXT_STYLE_END */
+]],
+    -- 注意:斜体可见与否取决于当前字体是否有斜体字形——中文常用字体普遍没有,
+    -- crengine 不做伪斜体合成,无斜体字形时回退正体(视觉无变化),是字体限制。
+    italic = [[
+/* PICKTHOUGHT_RUNTIME_TEXT_STYLE_BEGIN */
+.pickthought-inline-mark,
+.pickthought-link,
+.pickthought-mark {
+    color: inherit !important;
+    font-style: italic !important;
+}
+/* PICKTHOUGHT_RUNTIME_TEXT_STYLE_END */
+]],
+}
+
+local RUNTIME_CSS = {
+    default = [[
+/* PICKTHOUGHT_RUNTIME_ANNOTATION_STYLE_BEGIN */
+.pickthought-link,
+.pickthought-mark {
+    text-decoration: none !important;
+}
+.pickthought-inline-mark {
+    text-decoration: underline !important;
+}
+.pickthought-mark {
+    border-bottom: 2px dashed #ff6b35 !important;
+    padding-bottom: 2px !important;
+}
+/* PICKTHOUGHT_RUNTIME_ANNOTATION_STYLE_END */
+]],
+    thin_solid = [[
+/* PICKTHOUGHT_RUNTIME_ANNOTATION_STYLE_BEGIN */
+.pickthought-inline-mark,
+.pickthought-mark {
+    text-decoration: none !important;
+    padding-bottom: 0 !important;
+}
+.pickthought-inline-mark {
+    border-bottom: 1px solid currentColor !important;
+}
+.pickthought-mark {
+    border-bottom: 1px solid #ff6b35 !important;
+}
+/* PICKTHOUGHT_RUNTIME_ANNOTATION_STYLE_END */
+]],
+    thin_dashed = [[
+/* PICKTHOUGHT_RUNTIME_ANNOTATION_STYLE_BEGIN */
+.pickthought-inline-mark,
+.pickthought-mark {
+    text-decoration: none !important;
+    padding-bottom: 0 !important;
+}
+.pickthought-inline-mark {
+    border-bottom: 1px dashed currentColor !important;
+}
+.pickthought-mark {
+    border-bottom: 1px dashed #ff6b35 !important;
+}
+/* PICKTHOUGHT_RUNTIME_ANNOTATION_STYLE_END */
+]],
+    hidden = [[
+/* PICKTHOUGHT_RUNTIME_ANNOTATION_STYLE_BEGIN */
+.pickthought-inline-mark,
+.pickthought-mark {
+    text-decoration: none !important;
+    border-bottom: 0 !important;
+    padding-bottom: 0 !important;
+}
+/* PICKTHOUGHT_RUNTIME_ANNOTATION_STYLE_END */
+]],
+}
+
+-- 隐藏态独立开关(需求 2026-10-24,A4):"隐藏划线"不再是线条样式选项,
+-- 改为 annotations_visible 偏好控制;关闭时 _annotation_stylesheet 强制
+-- 使用本 CSS 块,行为语义=线条不可见且点按不弹窗(见 main._on_thought_tap)。
+M.HIDDEN_RUNTIME_CSS = RUNTIME_CSS.hidden
+
+function M.normalize_runtime_style(value)
+    value = tostring(value or M.DEFAULT_RUNTIME_STYLE)
+    for _, key in ipairs(M.RUNTIME_STYLE_CHOICES) do
+        if value == key then return key end
+    end
+    return M.DEFAULT_RUNTIME_STYLE
+end
+
+function M.normalize_text_style(value)
+    value = tostring(value or M.DEFAULT_TEXT_STYLE)
+    for _, key in ipairs(M.TEXT_STYLE_CHOICES) do
+        if value == key then return key end
+    end
+    return M.DEFAULT_TEXT_STYLE
+end
+
+function M.runtime_css(value)
+    local key = M.normalize_runtime_style(value)
+    return RUNTIME_CSS[key] or ""
+end
+
+function M.text_runtime_css(value)
+    local key = M.normalize_text_style(value)
+    return TEXT_RUNTIME_CSS[key] or ""
+end
+
+function M.inline_style_tag()
+    return '<style id="' .. M.INLINE_STYLE_ID .. '" type="text/css">\n'
+        .. M.CSS
+        .. '\n</style>'
+end
+
+local OLD_MARKERS = {
+    {"/* MIUREAD_ANNOTATION_STYLE_REPAIR_BEGIN */", "/* MIUREAD_ANNOTATION_STYLE_REPAIR_END */"},
+    {M.MARKER_BEGIN, M.MARKER_END},
+}
+
+local TARGET_SELECTORS = {
+    ".pickthought-inline-mark",
+    ".pickthought-mark",
+    ".pickthought-link",
+    ".pickthought-has-thought",
+}
+
+local function strip_marked_block(css, begin_marker, end_marker)
+    local start_at = css:find(begin_marker, 1, true)
+    while start_at do
+        local end_at = css:find(end_marker, start_at + #begin_marker, true)
+        if not end_at then
+            css = css:sub(1, start_at - 1)
+            break
+        end
+        css = css:sub(1, start_at - 1) .. css:sub(end_at + #end_marker)
+        start_at = css:find(begin_marker, 1, true)
+    end
+    return css
+end
+
+local function selector_is_annotation(selector)
+    selector = tostring(selector or "")
+    for _, needle in ipairs(TARGET_SELECTORS) do
+        if selector:find(needle, 1, true) then return true end
+    end
+    return false
+end
+
+-- 旧版生成的 style.css is a flat list of rules. Remove every previous
+-- annotation rule completely, instead of appending a higher-specificity patch.
+local function strip_annotation_rules(css)
+    local out = {}
+    local cursor = 1
+    while true do
+        local open_at = css:find("{", cursor, true)
+        if not open_at then
+            out[#out + 1] = css:sub(cursor)
+            break
+        end
+        local close_at = css:find("}", open_at + 1, true)
+        if not close_at then
+            out[#out + 1] = css:sub(cursor)
+            break
+        end
+        local selector = css:sub(cursor, open_at - 1)
+        local rule = css:sub(cursor, close_at)
+        if not selector_is_annotation(selector) then out[#out + 1] = rule end
+        cursor = close_at + 1
+    end
+    return table.concat(out)
+end
+
+function M.rewrite_css(css)
+    local original = tostring(css or "")
+    local rewritten = original
+    for _, markers in ipairs(OLD_MARKERS) do
+        rewritten = strip_marked_block(rewritten, markers[1], markers[2])
+    end
+    rewritten = strip_annotation_rules(rewritten)
+    rewritten = rewritten:gsub("%s+$", "") .. "\n\n" .. M.CSS
+    return rewritten, rewritten ~= original
+end
+
+local function rewrite_class_value(value)
+    local kept, seen = {}, {}
+    local has_inline, has_thought, has_thought_mark = false, false, false
+    for token in tostring(value or ""):gmatch("%S+") do
+        if token == "pickthought-inline-mark" then
+            has_inline = true
+        elseif token == "pickthought-has-thought" then
+            has_thought = true
+        elseif token == "pickthought-mark" then
+            has_thought_mark = true
+        elseif not seen[token] then
+            seen[token] = true
+            kept[#kept + 1] = token
+        end
+    end
+    if has_thought or has_thought_mark then
+        local out = {"pickthought-mark"}
+        for _, token in ipairs(kept) do out[#out + 1] = token end
+        local normalized = table.concat(out, " ")
+        return normalized, normalized ~= tostring(value or "")
+    end
+    if has_inline then
+        local out = {"pickthought-inline-mark"}
+        for _, token in ipairs(kept) do out[#out + 1] = token end
+        local normalized = table.concat(out, " ")
+        return normalized, normalized ~= tostring(value or "")
+    end
+    return tostring(value or ""), false
+end
+
+local function style_bounds_for_token(html, token)
+    local token_at = html:find(token, 1, true)
+    if not token_at then return nil end
+    local before = html:sub(1, token_at)
+    local open_at = before:match(".*()<style")
+    local open_end = open_at and html:find(">", open_at, true) or nil
+    local close_at = open_end and html:find("</style>", open_end + 1, true) or nil
+    if not open_at or not open_end or not close_at then return nil end
+    return open_at, open_end, close_at
+end
+
+local function replace_style_block(html, open_at, close_at, replacement)
+    return html:sub(1, open_at - 1)
+        .. replacement
+        .. html:sub(close_at + #"</style>")
+end
+
+local function ensure_inline_style(html)
+    if not html:find("data-pickthought-book=", 1, true) then return html, false end
+
+    local replacement = M.inline_style_tag()
+    local open_at, _, close_at = style_bounds_for_token(html, 'id="' .. M.INLINE_STYLE_ID .. '"')
+    if not open_at then
+        open_at, _, close_at = style_bounds_for_token(html, "id='" .. M.INLINE_STYLE_ID .. "'")
+    end
+    if open_at then
+        local current = html:sub(open_at, close_at + #"</style>" - 1)
+        if current == replacement then return html, false end
+        return replace_style_block(html, open_at, close_at, replacement), true
+    end
+
+    -- Experimental builds embedded the whole book stylesheet without an id.
+    -- Replace it with the lightweight annotation-only block; the full stylesheet
+    -- remains available through the existing external style.css reference.
+    open_at, _, close_at = style_bounds_for_token(html, M.MARKER_BEGIN)
+    if open_at then
+        return replace_style_block(html, open_at, close_at, replacement), true
+    end
+
+    local head_end = html:find("</head>", 1, true)
+    if not head_end then return html, false end
+    return html:sub(1, head_end - 1) .. replacement .. html:sub(head_end), true
+end
+
+function M.rewrite_xhtml(html)
+    local original = tostring(html or "")
+    local changed = false
+    local rewritten = original:gsub('class%s*=%s*"([^"]*)"', function(value)
+        local new_value, did_change = rewrite_class_value(value)
+        if did_change then changed = true end
+        return 'class="' .. new_value .. '"'
+    end)
+    rewritten = rewritten:gsub("class%s*=%s*'([^']*)'", function(value)
+        local new_value, did_change = rewrite_class_value(value)
+        if did_change then changed = true end
+        return "class='" .. new_value .. "'"
+    end)
+    local with_style, style_changed = ensure_inline_style(rewritten)
+    return with_style, changed or style_changed or with_style ~= original
+end
+
+function M.xhtml_is_current(html)
+    html = tostring(html or "")
+    if not html:find("data-pickthought-book=", 1, true) then return true end
+    return html:find('id="' .. M.INLINE_STYLE_ID .. '"', 1, true) ~= nil
+        and html:find(M.MARKER_BEGIN, 1, true) ~= nil
+        and html:match("%.pickthought%-mark%s*{%s*border%-bottom:%s*2px%s+dashed%s+#ff6b35;%s*"
+            .. "padding%-bottom:%s*2px;%s*color:%s*inherit;") ~= nil
+end
+
+function M.css_is_current(css)
+    css = tostring(css or "")
+    return css:find(M.MARKER_BEGIN, 1, true) ~= nil
+        and css:match("%.pickthought%-mark%s*{%s*border%-bottom:%s*2px%s+dashed%s+#ff6b35;%s*"
+            .. "padding%-bottom:%s*2px;%s*color:%s*inherit;") ~= nil
+        and css:find(".pickthought-inline-mark.pickthought-has-thought", 1, true) == nil
+        and css:find(".pickthought-link .pickthought-inline-mark", 1, true) == nil
+end
+
+return M
