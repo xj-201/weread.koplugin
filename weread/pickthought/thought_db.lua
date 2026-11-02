@@ -689,12 +689,44 @@ end
 -- 删除一个 range 的全部想法。
 function ThoughtDB.delete_range(db, chapter_uid, range_str)
     if not db then return false end
-    local ok = pcall(function()
-        local del = db:prepare("DELETE FROM review_items WHERE chapter_uid=? AND range=?")
-        del:reset():bind(tostring(chapter_uid or ""), tostring(range_str or "")):step()
-        del:close()
+    local ok_prepare, del = pcall(function()
+        return db:prepare("DELETE FROM review_items WHERE chapter_uid=? AND range=?")
     end)
-    return ok
+    if not ok_prepare or not del then
+        logger.warn("[撷思][ThoughtDB] delete_range prepare failed", tostring(del))
+        return false
+    end
+
+    local reset_ok, reset_result = pcall(function() return del:reset() end)
+    if not reset_ok or not reset_result then
+        pcall(function() del:close() end)
+        logger.warn("[撷思][ThoughtDB] delete_range reset failed",
+            tostring(reset_ok and "reset 返回失败" or reset_result))
+        return false
+    end
+    local bind_ok, bind_result = pcall(function()
+        return reset_result:bind(tostring(chapter_uid or ""), tostring(range_str or ""))
+    end)
+    if not bind_ok or not bind_result then
+        pcall(function() del:close() end)
+        logger.warn("[撷思][ThoughtDB] delete_range bind failed",
+            tostring(bind_ok and "bind 返回失败" or bind_result))
+        return false
+    end
+    local step_ok, step_result = pcall(function() return bind_result:step() end)
+    if not step_ok or step_result == false then
+        pcall(function() del:close() end)
+        logger.warn("[撷思][ThoughtDB] delete_range step failed",
+            tostring(step_ok and "step 返回失败" or step_result))
+        return false
+    end
+    local close_ok, close_result = pcall(function() return del:close() end)
+    if not close_ok or close_result == false then
+        logger.warn("[撷思][ThoughtDB] delete_range close failed",
+            tostring(close_ok and "close 返回失败" or close_result))
+        return false
+    end
+    return true
 end
 
 -- 暴露迁移表供测试注入(验证失败契约);生产代码不写入(当前 MIGRATIONS 为空)。
