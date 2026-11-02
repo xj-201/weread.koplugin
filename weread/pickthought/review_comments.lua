@@ -494,12 +494,19 @@ function M.cached_total_counts(db_path, review_ids)
     if not db then return out end
     local ok, err = pcall(function()
         local stmt = db:prepare(
-            "SELECT review_id, total_count FROM review_comment_cache")
+            "SELECT review_id, total_count, payload_json FROM review_comment_cache")
         while true do
             local row = stmt:step()
             if type(row) ~= "table" then break end
             local id = trim(tostring(row[1] or ""))
-            if wanted[id] then out[id] = tonumber(row[2]) or 0 end
+            if wanted[id] then
+                local decoded = Json.decode(tostring(row[3] or ""))
+                if type(decoded) == "table" and tonumber(decoded.version) == 2
+                    and type(decoded.items) == "table" then
+                    local total = tonumber(row[2]) or #decoded.items
+                    if total <= #decoded.items then out[id] = total end
+                end
+            end
         end
         stmt:close()
     end)
