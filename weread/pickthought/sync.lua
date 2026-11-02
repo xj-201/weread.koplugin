@@ -1237,7 +1237,18 @@ function Sync.run(deps)
     local temp_dest = doc_path .. ".pickthought-new"
     local stats, inject_err = deps.inject(src, book_ids[1], mapped, temp_dest,
         {append = append, meta = meta, book_ids = book_ids, progress = report_inject_progress})
-    if not stats then return nil, inject_err end
+    if not stats then
+        -- 注入器通常会清理自身的 .tmp-*;这里额外清理本层固定中间路径,
+        -- 防止上次异常退出留下的 .pickthought-new 被误认为本次产物。
+        local cleanup_ok, cleanup_err = remove(temp_dest)
+        if cleanup_ok == false then
+            logger.warn("[撷思][Sync] failed injection temp cleanup",
+                temp_dest, tostring(cleanup_err or "remove 返回失败"))
+            return nil, tostring(inject_err or "EPUB 注入失败")
+                .. ";且无法清理临时输出 " .. temp_dest
+        end
+        return nil, inject_err
+    end
     -- P4 取证(需求 2026-09-12):未定位划线远超历史水位(常态个位数)时,
     -- 输出按章节的分布,定位质量退化的具体范围。
     if type(stats.unlocated) == "number" and stats.unlocated > 50
