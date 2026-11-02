@@ -260,10 +260,29 @@ local function ensure_schema(db)
             payload_json   TEXT NOT NULL,
             fetched_at     INTEGER NOT NULL,
             last_access_at INTEGER NOT NULL,
-            expires_at     INTEGER NOT NULL
+            expires_at     INTEGER NOT NULL,
+            request_version INTEGER NOT NULL DEFAULT 0
         )]])
     end)
     if not ok then return false end
+    -- 兼容已有缓存库:只补充请求版本列,不重建表、不删除缓存数据。
+    local migration_ok = pcall(function()
+        local columns = db:prepare("PRAGMA table_info(review_comment_cache)")
+        local has_request_version = false
+        while true do
+            local row = columns:step()
+            if type(row) ~= "table" then break end
+            if tostring(row[2] or "") == "request_version" then
+                has_request_version = true
+            end
+        end
+        columns:close()
+        if not has_request_version then
+            db:exec([[ALTER TABLE review_comment_cache
+                ADD COLUMN request_version INTEGER NOT NULL DEFAULT 0]])
+        end
+    end)
+    if not migration_ok then return false end
     -- lua-ljsqlite3 的 exec 只取第一条语句,索引必须逐条执行。
     ok = pcall(function()
         db:exec([[CREATE INDEX IF NOT EXISTS idx_review_comment_cache_expires
@@ -349,11 +368,12 @@ function Cache:get(review_id, now)
     return record
 end
 
---- 写入缓存;超过 max_items 按 last_access_at 淘汰最旧。
-function Cache:put(review_id, book_id, result, now, ttl)
+--- 写入缓存;仅允许不早于库中版本的请求覆盖同一 review_id。
+function Cache:put(review_id, book_id, result, now, ttl, request_version)
     review_id = trim(tostring(review_id or ""))
     now = tonumber(now) or os.time()
     ttl = tonumber(ttl)
+    request_version = tonumber(request_version) or (now * 1000000)
     if ttl == nil or ttl <= 0 then return false end
     if review_id == "" or type(result) ~= "table" or type(result.items) ~= "table" then
         return false
@@ -366,18 +386,21 @@ function Cache:put(review_id, book_id, result, now, ttl)
     local ok, err = pcall(function()
         local payload = Json.encode({ version = 2, items = result.items })
         local upsert = db:prepare([[INSERT INTO review_comment_cache
-            (review_id, book_id, total_count, payload_json, fetched_at, last_access_at, expires_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            (review_id, book_id, total_count, payload_json, fetched_at, last_access_at,
+                expires_at, request_version)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(review_id) DO UPDATE SET
                 book_id=excluded.book_id,
                 total_count=excluded.total_count,
                 payload_json=excluded.payload_json,
                 fetched_at=excluded.fetched_at,
                 last_access_at=excluded.last_access_at,
-                expires_at=excluded.expires_at]])
+                expires_at=excluded.expires_at,
+                request_version=excluded.request_version
+            WHERE excluded.request_version >= review_comment_cache.request_version]])
         upsert:reset():bind(review_id, tostring(book_id or ""),
             total_count, payload,
-            now, now, now + ttl)
+            now, now, now + ttl, request_version)
         upsert:step()
         upsert:close()
 
@@ -433,9 +456,10 @@ end
 
 --- 读透:先查未过期缓存,未命中执行 loader(在线加载)并回写。
 --- loader 返回 normalize_response 的结果形态;ttl<=0(关闭)时跳过读写。
-function M.cache_get(cache, review_id, loader, book_id, now, ttl)
+function M.cache_get(cache, review_id, loader, book_id, now, ttl, request_version)
     review_id = trim(tostring(review_id or ""))
     now = tonumber(now) or os.time()
+    request_version = tonumber(request_version) or (now * 1000000)
     ttl = tonumber(ttl)
     if ttl == nil or ttl < 0 then ttl = DEFAULT_TTL end
     if review_id == "" then
@@ -456,7 +480,7 @@ function M.cache_get(cache, review_id, loader, book_id, now, ttl)
         return result
     end
     if cache and ttl > 0 then
-        cache:put(review_id, book_id, result, now, ttl)
+        cache:put(review_id, book_id, result, now, ttl, request_version)
     end
     return result
 end
