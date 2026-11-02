@@ -81,6 +81,11 @@ function M:startPickThoughtInjection(options)
         return false
     end
 
+    -- BackgroundWorker uses fork on Linux. SQLite connections opened by the
+    -- reader process must not be inherited and then reused across the fork: close
+    -- PickThought per-book handles first; the child will open its own connections.
+    require("weread.pickthought.thoughts").clear_memory_cache()
+
     local Dialog = require("weread.ui.download_dialog")
     local dialog = Dialog:new{
         title = _("Preparing PickThought injection"),
