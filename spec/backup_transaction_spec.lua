@@ -243,4 +243,49 @@ do
     expect(fs.read("/books/g.epub.pickthought/original.epub") == "CLEAN-v1", "preexisting baseline remains untouched")
 end
 
+
+-- First injection creates the clean baseline and installs the injected book
+-- as one transaction. The original clean EPUB remains available in the txn.
+do
+    local fs = new_fs()
+    fs.write("/books/h.epub", "CLEAN-first")
+    fs.write("/books/candidate.epub", "INJECTED-first")
+    fs.write("/books/new-clean.epub", "CLEAN-first")
+    local tx = harness(fs, "initial-import")
+    local result, err = tx:commit{
+        root = "/books/h.epub.pickthought", doc_path = "/books/h.epub",
+        candidate_path = "/books/candidate.epub",
+        original_path = "/books/h.epub.pickthought/original.epub",
+        new_original_path = "/books/new-clean.epub", operation = "initial",
+    }
+    expect(result and result.state == "committed", "initial injection should commit: " .. tostring(err))
+    expect(fs.read("/books/h.epub") == "INJECTED-first", "initial injected book installed")
+    expect(fs.read("/books/h.epub.pickthought/original.epub") == "CLEAN-first",
+        "initial clean baseline created")
+    expect(fs.read(result.previous_current) == "CLEAN-first", "initial source EPUB retained")
+end
+
+-- Recovery refuses a conflicting doc_path instead of overwriting user data.
+do
+    local fs = new_fs()
+    local root = "/books/i.epub.pickthought"
+    fs.write("/books/i.epub", "USER-EDITED")
+    fs.write(root .. "/transactions/recover-conflict/previous-current.epub", "INJECTED-before")
+    local tx = harness(fs, "unused-conflict")
+    assert(tx:_write(root .. "/transactions/recover-conflict/transaction.json", {
+        schema_version = 1, transaction_id = "recover-conflict", state = "current_staged",
+        doc_path = "/books/i.epub", original_changed = false,
+        candidate_fingerprint = "missing-candidate-fingerprint",
+        previous_current_fingerprint = fs.fingerprint(root .. "/transactions/recover-conflict/previous-current.epub"),
+    }))
+    assert(tx:_write(root .. "/manifest.json", {
+        schema_version = 1, state = "active", active_transaction_id = "recover-conflict",
+    }))
+    local ok, err = tx:recover(root)
+    expect(not ok and tostring(err):match("unknown file"), "recovery should report doc_path conflict")
+    expect(fs.read("/books/i.epub") == "USER-EDITED", "conflicting current file preserved")
+    expect(fs.read(root .. "/transactions/recover-conflict/previous-current.epub") == "INJECTED-before",
+        "previous current preserved when destination conflicts")
+end
+
 print("backup_transaction_spec: " .. checks .. " checks passed")
