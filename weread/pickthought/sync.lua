@@ -1650,7 +1650,7 @@ function Sync.run(deps)
                     if backup_staged then
                         rb_hint = "旧 .orig 备份自动恢复失败(" .. tostring(rb_err or "未知")
                             .. "),候选旧备份仍在 " .. old_backup .. ";当前 " .. backup
-                            .. " 可能仍是本次新备份或保留副本,请先核对文件,不要直接覆盖""
+                            .. " 可能仍是本次新备份或保留副本,请先核对文件,不要直接覆盖"
                     else
                         rb_hint = "新 .orig 备份清理失败(" .. tostring(rb_err or "未知")
                             .. "),请检查 " .. backup
