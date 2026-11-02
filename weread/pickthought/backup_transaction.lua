@@ -237,6 +237,18 @@ function Transaction:commit(opts)
     if operation ~= "initial" and operation ~= "append" and operation ~= "rebuild" then
         return nil, "unsupported transaction operation"
     end
+    if operation == "append" and original_changed then
+        return nil, "append transactions must not replace the clean baseline"
+    end
+    if operation == "initial" and not original_changed then
+        return nil, "initial transactions must install a clean baseline"
+    end
+    if operation == "initial" and self.exists(original_path) then
+        return nil, "initial transactions must not overwrite an existing clean baseline"
+    end
+    if operation == "rebuild" and not original_changed then
+        return nil, "rebuild transactions must provide a new clean baseline"
+    end
     local id = tostring(self.id())
     if not valid_id(id) then return nil, "invalid transaction id" end
     local paths = self:_paths(root, id)
