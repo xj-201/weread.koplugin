@@ -208,7 +208,7 @@ do
     fs.write(root .. "/manifest.json", "placeholder")
     local tx_manifest = {
         schema_version = 1, transaction_id = "recover-1", state = "current_staged",
-        doc_path = "/books/f.epub", original_changed = false,
+        doc_path = "/books/f.epub", original_changed = false, original_existed_before = false,
         candidate_fingerprint = fs.fingerprint(root .. "/transactions/recover-1/candidate.epub"),
         previous_current_fingerprint = fs.fingerprint(root .. "/transactions/recover-1/previous-current.epub"),
     }
@@ -282,7 +282,7 @@ do
     local tx = harness(fs, "unused-conflict")
     assert(tx:_write(root .. "/transactions/recover-conflict/transaction.json", {
         schema_version = 1, transaction_id = "recover-conflict", state = "current_staged",
-        doc_path = "/books/i.epub", original_changed = false,
+        doc_path = "/books/i.epub", original_changed = false, original_existed_before = false,
         candidate_fingerprint = "missing-candidate-fingerprint",
         previous_current_fingerprint = fs.fingerprint(root .. "/transactions/recover-conflict/previous-current.epub"),
     }))
