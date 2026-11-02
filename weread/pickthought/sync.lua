@@ -1241,7 +1241,7 @@ function Sync.run(deps)
         -- 注入器通常会清理自身的 .tmp-*;这里额外清理本层固定中间路径,
         -- 防止上次异常退出留下的 .pickthought-new 被误认为本次产物。
         local cleanup_ok, cleanup_err = remove(temp_dest)
-        if cleanup_ok == false then
+        if not cleanup_ok then
             logger.warn("[撷思][Sync] failed injection temp cleanup",
                 temp_dest, tostring(cleanup_err or "remove 返回失败"))
             return nil, tostring(inject_err or "EPUB 注入失败")
