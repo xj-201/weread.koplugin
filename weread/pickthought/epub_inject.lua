@@ -646,11 +646,8 @@ function M.inject_copy(src, book_id, chapters, opts)
 
     local ok, rename_err = rename(tmp, dest)
     if not ok then
-        -- Windows 上 rename 不覆盖已存在目标:清掉旧副本重试一次。
-        os.remove(dest)
-        ok, rename_err = rename(tmp, dest)
-    end
-    if not ok then
+        -- 不删除已有 dest 再重试:它可能是另一任务刚完成的输出,或调用方保留的有效副本。
+        -- POSIX rename 可原子替换目标;若当前平台不支持覆盖,宁可失败也不破坏旧文件。
         os.remove(tmp)
         release_temp_lock()
         return nil, "无法生成副本:" .. tostring(rename_err or "重命名失败")
