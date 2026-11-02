@@ -151,6 +151,7 @@ function Runner.run(plugin, doc_path, book_id, worker_context, options)
     local report, sync_err = Sync.run{
         doc_path = doc_path,
         book_id = tostring(book_id),
+        temp_suffix = worker_context and worker_context.token,
         api = api,
         annotations = annotations,
         load_meta = function(path) return EpubReader.load(path) end,
