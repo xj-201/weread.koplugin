@@ -427,6 +427,34 @@ function M:_prefetchPickThoughtCommentCounts(popup, book_id)
     if changed then popup:refresh_comment_counts() end
     if #pending == 0 then return end
 
+    -- 每条想法在当前对象生命周期内最多自动重试一次；只对网络类
+    -- 临时故障重试，登录失效、限流和无效响应不自动重复请求。
+    local function schedule_retry(items, retry_ids)
+        local retry_items = {}
+        for _, item in ipairs(items) do
+            local id = tostring(item.review_id or "")
+            local generation = pending_generations[item]
+            local current_generation =
+                tonumber(item._comment_count_request_generation) or 0
+            if (not retry_ids or retry_ids[id])
+                and current_generation == generation
+                and (tonumber(item._comment_count_prefetch_retries) or 0) < 1 then
+                item._comment_count_prefetch_retries =
+                    (tonumber(item._comment_count_prefetch_retries) or 0) + 1
+                retry_items[#retry_items + 1] = item
+            end
+        end
+        if #retry_items == 0 then return end
+        UIManager:scheduleIn(2, function()
+            if popup._popup_generation ~= popup_generation then return end
+            local still_shown = false
+            pcall(function() still_shown = UIManager:isWidgetShown(popup) == true end)
+            if still_shown then
+                self:_prefetchPickThoughtCommentCounts(popup, book_id)
+            end
+        end)
+    end
+
     -- 只运行一个预取子进程。若旧任务尚未完成，保存最新视口；
     -- 旧任务结束后会重新扫描该视口，而不是沿用过期的 pending 列表。
     if self._pickthought_comment_prefetch_pid then
@@ -462,7 +490,14 @@ function M:_prefetchPickThoughtCommentCounts(popup, book_id)
                 if type(result) == "table" and result.ok then
                     out[#out + 1] = {
                         review_id = review_id,
+                        ok = true,
                         total_count = tonumber(result.total_count) or 0,
+                    }
+                else
+                    out[#out + 1] = {
+                        review_id = review_id,
+                        ok = false,
+                        error = type(result) == "table" and result.error or "invalid_response",
                     }
                 end
                 if index < #ids then
@@ -478,7 +513,10 @@ function M:_prefetchPickThoughtCommentCounts(popup, book_id)
         require("ffi").C._exit(0)
     end
     local fork_ok, pid = pcall(FFIUtil.runInSubProcess, child, false, false)
-    if not fork_ok or not pid then return end
+    if not fork_ok or not pid then
+        schedule_retry(pending)
+        return
+    end
     self._pickthought_comment_prefetch_pid = pid
     local deadline = os.time() + 180
 
@@ -512,9 +550,14 @@ function M:_prefetchPickThoughtCommentCounts(popup, book_id)
             local still_shown = false
             pcall(function() still_shown = UIManager:isWidgetShown(popup) == true end)
             if still_shown and popup_is_current() and decoded_ok and type(results) == "table" then
-                local counts = {}
+                local counts, retry_ids = {}, {}
                 for _, row in ipairs(results) do
-                    counts[tostring(row.review_id)] = tonumber(row.total_count) or 0
+                    local id = tostring(row.review_id or "")
+                    if row.ok == true then
+                        counts[id] = tonumber(row.total_count) or 0
+                    elseif row.error == "network" then
+                        retry_ids[id] = true
+                    end
                 end
                 local updated = false
                 for _, item in ipairs(pending) do
@@ -533,6 +576,7 @@ function M:_prefetchPickThoughtCommentCounts(popup, book_id)
                 if updated then
                     pcall(function() popup:refresh_comment_counts() end)
                 end
+                schedule_retry(pending, retry_ids)
             end
             -- The child writes its result immediately before _exit(). Keep the
             -- worker slot occupied until the process is actually gone.
