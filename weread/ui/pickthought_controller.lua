@@ -534,6 +534,12 @@ function M:_prefetchPickThoughtCommentCounts(popup, book_id)
                     pcall(function() popup:refresh_comment_counts() end)
                 end
             end
+            -- The child writes its result immediately before _exit(). Keep the
+            -- worker slot occupied until the process is actually gone.
+            if U.file_exists("/proc/" .. tostring(pid)) then
+                UIManager:scheduleIn(0.1, poll)
+                return
+            end
             finish_prefetch()
             return
         end
@@ -545,6 +551,12 @@ function M:_prefetchPickThoughtCommentCounts(popup, book_id)
         if os.time() >= deadline then
             if type(FFIUtil.terminateSubProcess) == "function" then
                 pcall(FFIUtil.terminateSubProcess, pid)
+            end
+            -- Do not start the queued worker while the timed-out child is
+            -- still present; terminateSubProcess may need a poll to reap it.
+            if U.file_exists("/proc/" .. tostring(pid)) then
+                UIManager:scheduleIn(0.5, poll)
+                return
             end
             os.remove(result_path)
             finish_prefetch()
