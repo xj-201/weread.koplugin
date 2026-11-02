@@ -1,0 +1,769 @@
+
+
+11/02/26-01:35:28 INFO  Inhibiting user input 
+11/02/26-02:03:00 INFO  Restoring user input handling 
+11/02/26-02:03:03 INFO  [撷思][ProgressSync] refreshed queued position from the reopened document: CB_6k554r57tDNP77H75M9N92uR 
+11/02/26-02:03:07 INFO  [撷思][ReadReport] enter read session succeeded for book: CB_6k554r57tDNP77H75M9N92uR 
+11/02/26-02:03:34 WARN  [撷思][ReadReport] async job timed out; terminating and waiting for process exit: 14738 
+11/02/26-02:03:35 WARN  [撷思][ReadReport] asynchronous job failed: invalid_subprocess_response 
+11/02/26-02:03:35 WARN  [撷思][ProgressSync] pending position upload failed: invalid_subprocess_response 
+11/02/26-02:04:00 WARN  [撷思][ReadReport] active timer book does not match current binding; preserving active seconds without reassignment 
+11/02/26-02:04:31 WARN  [撷思][ReadReport] active timer book does not match current binding; preserving active seconds without reassignment 
+11/02/26-02:05:01 WARN  [撷思][ReadReport] active timer book does not match current binding; preserving active seconds without reassignment 
+11/02/26-02:05:32 WARN  [撷思][ReadReport] active timer book does not match current binding; preserving active seconds without reassignment 
+11/02/26-02:06:02 WARN  [撷思][ReadReport] active timer book does not match current binding; preserving active seconds without reassignment 
+11/02/26-02:06:33 WARN  [撷思][ReadReport] active timer book does not match current binding; preserving active seconds without reassignment 
+11/02/26-02:07:03 WARN  [撷思][ReadReport] active timer book does not match current binding; preserving active seconds without reassignment 
+11/02/26-02:07:34 WARN  [撷思][ReadReport] active timer book does not match current binding; preserving active seconds without reassignment 
+11/02/26-02:08:04 WARN  [撷思][ReadReport] active timer book does not match current binding; preserving active seconds without reassignment 
+11/02/26-02:08:35 WARN  [撷思][ReadReport] active timer book does not match current binding; preserving active seconds without reassignment 
+11/02/26-02:09:05 WARN  [撷思][ReadReport] active timer book does not match current binding; preserving active seconds without reassignment 
+11/02/26-02:09:39 WARN  [撷思][ReadReport] active timer book does not match current binding; preserving active seconds without reassignment 
+11/02/26-02:10:09 WARN  [撷思][ReadReport] active timer book does not match current binding; preserving active seconds without reassignment 
+11/02/26-02:10:38 INFO  [撷思][ThoughtPopupDiag] event= tap_begin request= 27 
+11/02/26-02:10:38 INFO  [撷思][ThoughtPopupDiag] event= link_lookup request= 27 elapsed_ms= 3 found= false ok= true 
+11/02/26-02:10:40 WARN  [撷思][ReadReport] active timer book does not match current binding; preserving active seconds without reassignment 
+11/02/26-02:10:50 INFO  [撷思][ThoughtPopupDiag] event= tap_begin request= 28 
+11/02/26-02:10:50 INFO  [撷思][ThoughtPopupDiag] event= link_lookup request= 28 elapsed_ms= 2 found= false ok= true 
+11/02/26-02:11:10 WARN  [撷思][ReadReport] active timer book does not match current binding; preserving active seconds without reassignment 
+11/02/26-02:11:12 INFO  [撷思][ThoughtPopupDiag] event= tap_begin request= 29 
+11/02/26-02:11:12 INFO  [撷思][ThoughtPopupDiag] event= link_lookup request= 29 elapsed_ms= 2 found= false ok= true 
+11/02/26-02:11:40 WARN  [撷思][ReadReport] active timer book does not match current binding; preserving active seconds without reassignment 
+11/02/26-02:11:43 INFO  [撷思][ThoughtPopupDiag] event= tap_begin request= 30 
+11/02/26-02:11:43 INFO  [撷思][ThoughtPopupDiag] event= link_lookup request= 30 elapsed_ms= 9 found= true ok= true 
+11/02/26-02:11:43 INFO  [撷思][ThoughtPopupDiag] event= link_parse request= 30 elapsed_ms= 0 found= true 
+11/02/26-02:11:43 INFO  [撷思][ThoughtPopupDiag] event= show_begin request= 30 book= 45420986 chapter= 1685 range= 8841-8915 
+11/02/26-02:11:43 INFO  [撷思][ThoughtPopupDiag] event= thoughts_db_cache_hit request= 30 book= 45420986 
+11/02/26-02:11:43 INFO  [撷思][ThoughtPopupDiag] event= db_range_query request= 30 chapter= 1685 elapsed_ms= 1 ok= true rows= 1 
+11/02/26-02:11:43 INFO  [撷思][ThoughtPopupDiag] event= thoughts_range_query request= 30 book= 45420986 chapter= 1685 elapsed_ms= 2 rows= 1 
+11/02/26-02:11:43 INFO  [撷思][ThoughtPopupDiag] event= thoughts_find request= 30 book= 45420986 chapter= 1685 elapsed_ms= 4 ok= true rows= 1 
+11/02/26-02:11:43 INFO  [撷思][ThoughtPopupDiag] event= thought_find request= 30 elapsed_ms= 5 ok= true 
+11/02/26-02:11:43 INFO  [撷思][ThoughtPopupDiag] event= popup_items request= 30 count= 1 elapsed_ms= 0 
+11/02/26-02:11:43 INFO  [撷思][ThoughtPopupDiag] event= popup_module_require request= 30 elapsed_ms= 0 
+11/02/26-02:11:43 INFO  [撷思][ThoughtPopupDiag] event= popup_config_build request= 30 elapsed_ms= 1 
+11/02/26-02:11:43 INFO  [撷思][ThoughtPopupDiag] event= popup_show_begin request= 30 items= 1 position= center 
+11/02/26-02:11:43 INFO  [撷思][ThoughtPopupDiag] event= face_get_cache_hit request= 30 variant= likes 
+11/02/26-02:11:43 INFO  [撷思][ThoughtPopupDiag] event= face_get_cache_hit request= 30 variant= meta 
+11/02/26-02:11:43 INFO  [撷思][ThoughtPopupDiag] event= face_get_cache_hit request= 30 variant= content 
+11/02/26-02:11:43 INFO  [撷思][ThoughtPopup] paginated in 2.7ms (blocks 0.1ms) items=1 content_h=123 
+11/02/26-02:11:43 INFO  [撷思][ThoughtPopupDiag] event= popup_paginate request= 30 blocks_ms= 0 content_h= 123 elapsed_ms= 3 items= 1 
+11/02/26-02:11:43 INFO  [撷思][ThoughtPopupDiag] event= popup_show_end request= 30 elapsed_ms= 53 pooled= true 
+11/02/26-02:11:43 INFO  [撷思][ThoughtPopupDiag] event= popup_show_return request= 30 elapsed_ms= 54 total_ms= 69 
+11/02/26-02:11:43 INFO  [撷思][ThoughtPopup] opened book= 45420986 chapter= 1685 comments= 1 elapsed_ms= 69 
+11/02/26-02:11:43 INFO  [撷思][ThoughtPopupDiag] event= show_end request= 30 elapsed_ms= 70 ok= true 
+11/02/26-02:11:44 INFO  [撷思][ReviewComments] prefetch visible book= 45420986 pending= 1 
+11/02/26-02:11:47 INFO  [撷思][ThoughtPopupDiag] event= tap_begin request= 31 
+11/02/26-02:11:47 INFO  [撷思][ThoughtPopupDiag] event= link_lookup request= 31 elapsed_ms= 2 found= false ok= true 
+11/02/26-02:12:11 WARN  [撷思][ReadReport] active timer book does not match current binding; preserving active seconds without reassignment 
+11/02/26-02:12:41 WARN  [撷思][ReadReport] active timer book does not match current binding; preserving active seconds without reassignment 
+11/02/26-02:12:58 INFO  [撷思][ThoughtPopupDiag] event= tap_begin request= 32 
+11/02/26-02:12:58 INFO  [撷思][ThoughtPopupDiag] event= link_lookup request= 32 elapsed_ms= 2 found= false ok= true 
+11/02/26-02:13:12 WARN  [撷思][ReadReport] active timer book does not match current binding; preserving active seconds without reassignment 
+11/02/26-02:13:24 INFO  [撷思][ThoughtPopupDiag] event= tap_begin request= 33 
+11/02/26-02:13:24 INFO  [撷思][ThoughtPopupDiag] event= link_lookup request= 33 elapsed_ms= 2 found= false ok= true 
+11/02/26-02:13:43 WARN  [撷思][ReadReport] active timer book does not match current binding; preserving active seconds without reassignment 
+11/02/26-02:14:13 WARN  [撷思][ReadReport] active timer book does not match current binding; preserving active seconds without reassignment 
+11/02/26-02:14:15 INFO  [撷思][ThoughtPopupDiag] event= tap_begin request= 34 
+11/02/26-02:14:15 INFO  [撷思][ThoughtPopupDiag] event= link_lookup request= 34 elapsed_ms= 2 found= false ok= true 
+11/02/26-02:14:40 INFO  [撷思][ThoughtPopupDiag] event= tap_begin request= 35 
+11/02/26-02:14:41 INFO  [撷思][ThoughtPopupDiag] event= link_lookup request= 35 elapsed_ms= 2 found= false ok= true 
+11/02/26-02:14:44 WARN  [撷思][ReadReport] active timer book does not match current binding; preserving active seconds without reassignment 
+11/02/26-02:15:14 WARN  [撷思][ReadReport] active timer book does not match current binding; preserving active seconds without reassignment 
+11/02/26-02:15:27 INFO  [撷思][ThoughtPopupDiag] event= tap_begin request= 36 
+11/02/26-02:15:27 INFO  [撷思][ThoughtPopupDiag] event= link_lookup request= 36 elapsed_ms= 2 found= false ok= true 
+11/02/26-02:15:46 WARN  [撷思][ReadReport] active timer book does not match current binding; preserving active seconds without reassignment 
+11/02/26-02:16:16 WARN  [撷思][ReadReport] active timer book does not match current binding; preserving active seconds without reassignment 
+11/02/26-02:16:25 INFO  [撷思][ThoughtPopupDiag] event= tap_begin request= 37 
+11/02/26-02:16:25 INFO  [撷思][ThoughtPopupDiag] event= link_lookup request= 37 elapsed_ms= 2 found= false ok= true 
+11/02/26-02:16:45 INFO  [撷思][ThoughtPopupDiag] event= tap_begin request= 38 
+11/02/26-02:16:45 INFO  [撷思][ThoughtPopupDiag] event= link_lookup request= 38 elapsed_ms= 2 found= false ok= true 
+11/02/26-02:16:47 WARN  [撷思][ReadReport] active timer book does not match current binding; preserving active seconds without reassignment 
+11/02/26-02:17:07 INFO  [撷思][ThoughtPopupDiag] event= tap_begin request= 39 
+11/02/26-02:17:07 INFO  [撷思][ThoughtPopupDiag] event= link_lookup request= 39 elapsed_ms= 2 found= false ok= true 
+11/02/26-02:17:18 WARN  [撷思][ReadReport] active timer book does not match current binding; preserving active seconds without reassignment 
+11/02/26-02:17:49 WARN  [撷思][ReadReport] active timer book does not match current binding; preserving active seconds without reassignment 
+11/02/26-02:18:19 WARN  [撷思][ReadReport] active timer book does not match current binding; preserving active seconds without reassignment 
+11/02/26-02:18:49 WARN  [撷思][ReadReport] active timer book does not match current binding; preserving active seconds without reassignment 
+11/02/26-02:19:20 WARN  [撷思][ReadReport] active timer book does not match current binding; preserving active seconds without reassignment 
+11/02/26-02:19:50 WARN  [撷思][ReadReport] active timer book does not match current binding; preserving active seconds without reassignment 
+11/02/26-02:20:20 WARN  [撷思][ReadReport] active timer book does not match current binding; preserving active seconds without reassignment 
+11/02/26-02:20:50 WARN  [撷思][ReadReport] active timer book does not match current binding; preserving active seconds without reassignment 
+11/02/26-02:21:21 WARN  [撷思][ReadReport] active timer book does not match current binding; preserving active seconds without reassignment 
+11/02/26-02:21:51 WARN  [撷思][ReadReport] active timer book does not match current binding; preserving active seconds without reassignment 
+11/02/26-02:22:21 WARN  [撷思][ReadReport] active timer book does not match current binding; preserving active seconds without reassignment 
+11/02/26-02:22:51 WARN  [撷思][ReadReport] active timer book does not match current binding; preserving active seconds without reassignment 
+11/02/26-02:23:22 WARN  [撷思][ReadReport] active timer book does not match current binding; preserving active seconds without reassignment 
+11/02/26-02:23:52 WARN  [撷思][ReadReport] active timer book does not match current binding; preserving active seconds without reassignment 
+11/02/26-02:24:22 WARN  [撷思][ReadReport] active timer book does not match current binding; preserving active seconds without reassignment 
+11/02/26-02:24:52 WARN  [撷思][ReadReport] active timer book does not match current binding; preserving active seconds without reassignment 
+11/02/26-02:25:23 WARN  [撷思][ReadReport] active timer book does not match current binding; preserving active seconds without reassignment 
+11/02/26-02:25:53 WARN  [撷思][ReadReport] active timer book does not match current binding; preserving active seconds without reassignment 
+11/02/26-02:26:23 WARN  [撷思][ReadReport] active timer book does not match current binding; preserving active seconds without reassignment 
+11/02/26-02:26:54 WARN  [撷思][ReadReport] active timer book does not match current binding; preserving active seconds without reassignment 
+11/02/26-02:27:09 INFO  [撷思][ProgressSync] persisted pending position for next asynchronous upload: 45420986 
+11/02/26-02:27:09 INFO  Inhibiting user input 
+11/02/26-02:48:31 INFO  Restoring user input handling 
+11/02/26-02:49:32 INFO  [撷思][ReadReport] enter read session succeeded for book: 45420986 
+11/02/26-02:50:00 WARN  [撷思][ReadReport] async job timed out; terminating and waiting for process exit: 16329 
+11/02/26-02:50:00 WARN  [撷思][ReadReport] asynchronous job failed: invalid_subprocess_response 
+11/02/26-02:50:04 INFO  [撷思][ThoughtPopupDiag] event= tap_begin request= 40 
+11/02/26-02:50:04 INFO  [撷思][ThoughtPopupDiag] event= link_lookup request= 40 elapsed_ms= 3 found= false ok= true 
+11/02/26-03:00:04 INFO  [撷思][ProgressSync] persisted pending position for next asynchronous upload: 45420986 
+11/02/26-03:00:04 INFO  Inhibiting user input 
+11/02/26-03:26:09 INFO  Restoring user input handling 
+11/02/26-03:26:12 WARN  [撷思][HTTP] retry attempt= 1 url= https://weread.qq.com/web/reader/29f32aa072b511ba29f196f status= nil 
+11/02/26-03:26:12 INFO  [撷思] initialized version= 0.6.0 schema= 1 root= plugins/pickthought.koplugin 
+11/02/26-03:26:12 INFO  zlibrary_credentials.lua is undefined. Using UI settings if available. 
+11/02/26-03:26:12 WARN  [撷思][HTTP] retry attempt= 2 url= https://weread.qq.com/web/reader/29f32aa072b511ba29f196f status= nil 
+11/02/26-03:26:13 WARN  [撷思][ReadReport] ensure_context failed: plugins/pickthought.koplugin/pickthought/api.lua:133: plugins/pickthought.koplugin/pickthought/http.lua:399: network request failed: nil 
+11/02/26-03:26:14 WARN  [撷思][ReadReport] asynchronous job failed: plugins/pickthought.koplugin/pickthought/api.lua:133: plugins/pickthought.koplugin/pickthought/http.lua:399: network request failed: nil 
+11/02/26-03:26:14 WARN  [撷思][ProgressSync] pending position upload failed: plugins/pickthought.koplugin/pickthought/api.lua:133: plugins/pickthought.koplugin/pickthought/http.lua:399: network request failed: nil 
+11/02/26-03:26:36 INFO  Preparing to quit UIManager with exit code: 85 
+11/02/26-03:26:36 INFO  Tearing down UIManager with exit code: 85 
+[ko-input] Closed input device with fd: 11 @ idx: 1 (matched by idx)
+[ko-input] Closed input device with fd: 10 @ idx: 0 (matched by idx)
+[ue_wait_for_event:269] poll: Interrupted system call
+lipc-wait-event exited normally with status: 0
+---------------------------------------------
+                launching...
+  _  _____  ____                _
+ | |/ / _ \|  _ \ ___  __ _  __| | ___ _ __
+ | ' / | | | |_) / _ \/ _` |/ _` |/ _ \ '__|
+ | . \ |_| |  _ <  __/ (_| | (_| |  __/ |
+ |_|\_\___/|_| \_\___|\__,_|\__,_|\___|_|
+
+ It's a scroll... It's a codex... It's KOReader!
+
+ [*] Current time: 11/02/26-03:26:37
+has monolibtic? no (libs/libkoreader-monolibtic.so: cannot open shared object file: No such file or directory)
+lib_search_path: libs/?
+lib_basic_format: lib%s.so
+lib_version_format: lib%s.so.%s
+ [*] Version: v2026.07.1
+
+ffi.load: rt.so.1 (RTLD_GLOBAL)
+ffi.findlib: utf8proc [3]
+ffi.load: libs/libutf8proc.so.3
+ffi.findlib: blitbuffer
+ffi.load: libs/libblitbuffer.so
+ffi.findlib: sqlite3 [0]
+ffi.load: libs/libsqlite3.so.0
+ffi.findlib: fbink_input [1]
+ffi.load: libs/libfbink_input.so.1
+[FBInk] /dev/input/event0: `20cc000.snvs:snvs-powerkey` = KEY | POWER_BUTTON
+[FBInk] /dev/input/event1: `bd71827-power` = KEY | POWER_BUTTON
+[FBInk] /dev/input/event2: `goodix-ts` = TOUCHSCREEN
+[ko-input] Forked off fake event generator (pid: 17505)
+11/02/26-03:26:38 INFO  initializing for device KindlePaperWhite4 
+11/02/26-03:26:38 INFO  framebuffer resolution: {
+  h = 1448,
+  w = 1072
+} --[[table: 0x76843b80]] 
+[ko-input]: uevent listener ready for input device hotplug
+ffi.findlib: wrap-mupdf
+ffi.load: libs/libwrap-mupdf.so
+ffi.findlib: freetype [6]
+ffi.load: libs/libfreetype.so.6
+ffi.findlib: harfbuzz [0]
+ffi.load: libs/libharfbuzz.so.0
+ffi.findlib: zstd [1]
+ffi.load: libs/libzstd.so.1
+ffi.findlib: archive [13]
+ffi.load: libs/libarchive.so.13
+11/02/26-03:26:40 INFO  Looking for plugins in directory: plugins 
+ffi.findlib: leptonica [6]
+ffi.load: libs/libleptonica.so.6
+ffi.findlib: k2pdfopt [2]
+ffi.load: libs/libk2pdfopt.so.2
+11/02/26-03:26:44 INFO  zlibrary_credentials.lua is undefined. Using UI settings if available. 
+11/02/26-03:35:43 INFO  UIManager: No dialogs left to show 
+11/02/26-03:35:43 INFO  Tearing down UIManager with exit code: 0 
+[ko-input] Closed input device with fd: 11 @ idx: 1 (matched by idx)
+[ko-input] Closed input device with fd: 10 @ idx: 0 (matched by idx)
+[ue_wait_for_event:269] poll: Interrupted system call
+lipc-wait-event exited normally with status: 0
+---------------------------------------------
+                launching...
+  _  _____  ____                _
+ | |/ / _ \|  _ \ ___  __ _  __| | ___ _ __
+ | ' / | | | |_) / _ \/ _` |/ _` |/ _ \ '__|
+ | . \ |_| |  _ <  __/ (_| | (_| |  __/ |
+ |_|\_\___/|_| \_\___|\__,_|\__,_|\___|_|
+
+ It's a scroll... It's a codex... It's KOReader!
+
+ [*] Current time: 11/02/26-03:36:24
+has monolibtic? no (libs/libkoreader-monolibtic.so: cannot open shared object file: No such file or directory)
+lib_search_path: libs/?
+lib_basic_format: lib%s.so
+lib_version_format: lib%s.so.%s
+ [*] Version: v2026.07.1
+
+ffi.load: rt.so.1 (RTLD_GLOBAL)
+ffi.findlib: utf8proc [3]
+ffi.load: libs/libutf8proc.so.3
+ffi.findlib: blitbuffer
+ffi.load: libs/libblitbuffer.so
+ffi.findlib: sqlite3 [0]
+ffi.load: libs/libsqlite3.so.0
+ffi.findlib: fbink_input [1]
+ffi.load: libs/libfbink_input.so.1
+[FBInk] /dev/input/event0: `20cc000.snvs:snvs-powerkey` = KEY | POWER_BUTTON
+[FBInk] /dev/input/event1: `bd71827-power` = KEY | POWER_BUTTON
+[FBInk] /dev/input/event2: `goodix-ts` = TOUCHSCREEN
+[ko-input] Forked off fake event generator (pid: 19029)
+11/02/26-03:36:25 INFO  initializing for device KindlePaperWhite4 
+11/02/26-03:36:25 INFO  framebuffer resolution: {
+  h = 1448,
+  w = 1072
+} --[[table: 0x76b8b7a8]] 
+[ko-input]: uevent listener ready for input device hotplug
+ffi.findlib: wrap-mupdf
+ffi.load: libs/libwrap-mupdf.so
+ffi.findlib: freetype [6]
+ffi.load: libs/libfreetype.so.6
+ffi.findlib: harfbuzz [0]
+ffi.load: libs/libharfbuzz.so.0
+ffi.findlib: zstd [1]
+ffi.load: libs/libzstd.so.1
+ffi.findlib: archive [13]
+ffi.load: libs/libarchive.so.13
+11/02/26-03:36:26 INFO  Looking for plugins in directory: plugins 
+ffi.findlib: leptonica [6]
+ffi.load: libs/libleptonica.so.6
+ffi.findlib: k2pdfopt [2]
+ffi.load: libs/libk2pdfopt.so.2
+11/02/26-03:36:27 INFO  zlibrary_credentials.lua is undefined. Using UI settings if available. 
+11/02/26-03:36:31 INFO  opening file /mnt/us/documents/玄鉴仙族 - 季越人.txt - 初入.epub 
+CRE: font pmn caecilia lt regular: updated weight from 500 to 400
+CRE: font notosanskr bold: updated weight from 900 to 700
+CRE: font notoserifkr regular: updated weight from 500 to 400
+CRE: font notoserifkr bold: updated weight from 900 to 700
+11/02/26-03:36:32 INFO  Inhibiting user input 
+11/02/26-03:36:32 INFO  zlibrary_credentials.lua is undefined. Using UI settings if available. 
+CRE WARNING: cached rendering is invalid (stylesheet hash mismatch): doing full rendering
+11/02/26-03:37:34 INFO  Restoring user input handling 
+11/02/26-03:37:46 INFO  Preparing to quit UIManager with exit code: 85 
+11/02/26-03:37:46 INFO  UIManager: No dialogs left to show 
+11/02/26-03:37:46 INFO  Tearing down UIManager with exit code: 85 
+[ko-input] Closed input device with fd: 11 @ idx: 1 (matched by idx)
+[ko-input] Closed input device with fd: 10 @ idx: 0 (matched by idx)
+[ue_wait_for_event:269] poll: Interrupted system call
+lipc-wait-event exited normally with status: 0
+---------------------------------------------
+                launching...
+  _  _____  ____                _
+ | |/ / _ \|  _ \ ___  __ _  __| | ___ _ __
+ | ' / | | | |_) / _ \/ _` |/ _` |/ _ \ '__|
+ | . \ |_| |  _ <  __/ (_| | (_| |  __/ |
+ |_|\_\___/|_| \_\___|\__,_|\__,_|\___|_|
+
+ It's a scroll... It's a codex... It's KOReader!
+
+ [*] Current time: 11/02/26-03:37:47
+has monolibtic? no (libs/libkoreader-monolibtic.so: cannot open shared object file: No such file or directory)
+lib_search_path: libs/?
+lib_basic_format: lib%s.so
+lib_version_format: lib%s.so.%s
+ [*] Version: v2026.07.1
+
+ffi.load: rt.so.1 (RTLD_GLOBAL)
+ffi.findlib: utf8proc [3]
+ffi.load: libs/libutf8proc.so.3
+ffi.findlib: blitbuffer
+ffi.load: libs/libblitbuffer.so
+ffi.findlib: sqlite3 [0]
+ffi.load: libs/libsqlite3.so.0
+ffi.findlib: fbink_input [1]
+ffi.load: libs/libfbink_input.so.1
+[FBInk] /dev/input/event0: `20cc000.snvs:snvs-powerkey` = KEY | POWER_BUTTON
+[FBInk] /dev/input/event1: `bd71827-power` = KEY | POWER_BUTTON
+[FBInk] /dev/input/event2: `goodix-ts` = TOUCHSCREEN
+[ko-input] Forked off fake event generator (pid: 19039)
+11/02/26-03:37:48 INFO  initializing for device KindlePaperWhite4 
+11/02/26-03:37:48 INFO  framebuffer resolution: {
+  h = 1448,
+  w = 1072
+} --[[table: 0x7673cf00]] 
+[ko-input]: uevent listener ready for input device hotplug
+ffi.findlib: wrap-mupdf
+ffi.load: libs/libwrap-mupdf.so
+ffi.findlib: freetype [6]
+ffi.load: libs/libfreetype.so.6
+ffi.findlib: harfbuzz [0]
+ffi.load: libs/libharfbuzz.so.0
+ffi.findlib: zstd [1]
+ffi.load: libs/libzstd.so.1
+ffi.findlib: archive [13]
+ffi.load: libs/libarchive.so.13
+11/02/26-03:37:49 INFO  Looking for plugins in directory: plugins 
+ffi.findlib: leptonica [6]
+ffi.load: libs/libleptonica.so.6
+ffi.findlib: k2pdfopt [2]
+ffi.load: libs/libk2pdfopt.so.2
+CRE: font pmn caecilia lt regular: updated weight from 500 to 400
+CRE: font notosanskr bold: updated weight from 900 to 700
+CRE: font notoserifkr regular: updated weight from 500 to 400
+CRE: font notoserifkr bold: updated weight from 900 to 700
+11/02/26-03:37:50 INFO  [WeRead] thought popup emoji font: /mnt/us/koreader/plugins/weread.koplugin/fonts/NotoEmoji-Regular.ttf 
+11/02/26-03:37:51 INFO  [WeRead] initialized: version= 1.6.0-merged 
+11/02/26-03:37:51 INFO  zlibrary_credentials.lua is undefined. Using UI settings if available. 
+11/02/26-03:37:55 INFO  opening file /mnt/us/documents/玄鉴仙族 - 季越人.txt - 初入.epub 
+11/02/26-03:37:55 INFO  Inhibiting user input 
+11/02/26-03:37:55 INFO  [WeRead] initialized: version= 1.6.0-merged 
+11/02/26-03:37:55 INFO  zlibrary_credentials.lua is undefined. Using UI settings if available. 
+11/02/26-03:37:57 INFO  [WeRead] reader_open_perf stage= reader_ready_begin wall_ms= 0.0 session= 1 
+11/02/26-03:37:57 INFO  [WeRead] reader_open_perf stage= reader_setup wall_ms= 11.2 book_id= local 
+11/02/26-03:37:57 INFO  [WeRead] reader_open_perf stage= overlay_setup wall_ms= 22.0 
+11/02/26-03:37:57 INFO  [WeRead] reader_open_perf stage= annotations_begin wall_ms= 0.0 session= 1 
+11/02/26-03:37:57 INFO  [WeRead] reader_open_perf stage= context_begin wall_ms= 0.0 session= 1 
+11/02/26-03:37:57 INFO  [WeRead] reader_open_perf stage= annotation_binding wall_ms= 13.2 book_id= 45420986 
+11/02/26-03:37:57 INFO  [WeRead] reader_open_perf stage= annotation_catalog wall_ms= 237.1 chapters= 1681 
+11/02/26-03:37:58 INFO  [WeRead] reader_open_perf stage= chapter_mapping wall_ms= 911.4 chapters= 1681 
+11/02/26-03:37:58 INFO  [WeRead] reader_open_perf stage= document_identity wall_ms= 23.0 
+11/02/26-03:37:58 INFO  [WeRead] reader_open_perf stage= legacy_import wall_ms= 15.7 
+11/02/26-03:37:58 INFO  [WeRead] reader_open_perf stage= saved_annotation_status wall_ms= 15.2 
+11/02/26-03:37:58 INFO  [WeRead] reader_open_perf stage= context_total wall_ms= 1216.8 ok= true available= true 
+11/02/26-03:37:58 INFO  [WeRead] reader_open_perf stage= annotation_display_state wall_ms= 55.7 
+11/02/26-03:38:00 INFO  [WeRead] reader_open_perf stage= saved_annotation_overlay wall_ms= 1328.8 
+11/02/26-03:38:00 INFO  [WeRead] reader_open_perf stage= annotation_prefetch_disabled wall_ms= 0.8 
+11/02/26-03:38:00 INFO  [WeRead] reader_open_perf stage= annotations_ready wall_ms= 2636.4 
+11/02/26-03:38:00 INFO  [WeRead][ReadReport] read report skipped: document_not_weread 
+11/02/26-03:38:00 INFO  [WeRead] reader_open_perf stage= reader_services wall_ms= 28.1 
+11/02/26-03:38:00 INFO  [WeRead] reader_open_perf stage= reader_ready_total wall_ms= 2665.2 
+11/02/26-03:38:01 INFO  Restoring user input handling 
+11/02/26-03:38:43 INFO  [WeRead] shelf sync request: api=/shelf/sync skill_version= 1.0.5 auth=api_key cookies=skipped params=none 
+11/02/26-03:38:43 INFO  [WeRead] shelf sync completed: api=/shelf/sync http_status= 200 response= table(4) books= table(54) archive= table(0) albums= table(0) mp= table(2) 
+ffi.findlib: turbojpeg [0.5.0]
+ffi.load: libs/libturbojpeg.so.0.5.0
+ffi.findlib: lodepng
+ffi.load: libs/liblodepng.so
+ffi.findlib: turbojpeg [0.5.0]
+ffi.load: libs/libturbojpeg.so.0.5.0
+ffi.findlib: lodepng
+ffi.load: libs/liblodepng.so
+ffi.findlib: turbojpeg [0.5.0]
+ffi.load: libs/libturbojpeg.so.0.5.0
+ffi.findlib: lodepng
+ffi.load: libs/liblodepng.so
+ffi.findlib: turbojpeg [0.5.0]
+ffi.load: libs/libturbojpeg.so.0.5.0
+ffi.findlib: lodepng
+ffi.load: libs/liblodepng.so
+11/02/26-03:38:46 INFO  [WeRead][ReadReport] reading time report started: reason= menu book_id= CB_6k554r57tDNP77H75M9N92uR source= manual 
+11/02/26-03:39:21 INFO  [WeRead][ReadReport] read report success: count= 1 has_synckey= true 
+11/02/26-03:39:43 INFO  [WeRead] reader_open_perf stage= context_begin wall_ms= 0.0 session= 1 
+11/02/26-03:39:43 INFO  [WeRead] reader_open_perf stage= annotation_binding wall_ms= 14.0 book_id= 45420986 
+11/02/26-03:39:43 INFO  [WeRead] reader_open_perf stage= annotation_catalog wall_ms= 177.6 chapters= 1681 
+11/02/26-03:39:44 INFO  [WeRead] reader_open_perf stage= chapter_mapping wall_ms= 879.1 chapters= 1681 
+11/02/26-03:39:44 INFO  [WeRead] reader_open_perf stage= document_identity wall_ms= 21.7 
+11/02/26-03:39:44 INFO  [WeRead] reader_open_perf stage= legacy_import wall_ms= 15.6 
+11/02/26-03:39:44 INFO  [WeRead] reader_open_perf stage= saved_annotation_status wall_ms= 13.6 
+11/02/26-03:39:44 INFO  [WeRead] reader_open_perf stage= context_begin wall_ms= 0.0 session= 1 
+11/02/26-03:39:44 INFO  [WeRead] reader_open_perf stage= annotation_binding wall_ms= 12.7 book_id= 45420986 
+11/02/26-03:39:44 INFO  [WeRead] reader_open_perf stage= context_cached wall_ms= 0.7 
+11/02/26-03:40:03 INFO  [WeRead] thought_db opened /mnt/us/koreader/weread/books/45420986/thoughts.db 
+11/02/26-03:40:04 WARN  [WeRead] thought_db chapter write failed: chapter_uid= 1686 error= common/lua-ljsqlite3/init.lua:60: ljsqlite3[error] table review_items has no column named review_id
+stack traceback:
+	common/lua-ljsqlite3/init.lua:60: in function 'err'
+	common/lua-ljsqlite3/init.lua:235: in function 'E_conn'
+	common/lua-ljsqlite3/init.lua:241: in function 'T_okcode'
+	common/lua-ljsqlite3/init.lua:374: in function 'prepare'
+	plugins/weread.koplugin/weread/lib/thought_db.lua:147: in function 'insert_reviews'
+	plugins/weread.koplugin/weread/lib/thought_db.lua:196: in function <plugins/weread.koplugin/weread/lib/thought_db.lua:186>
+	[C]: in function 'pcall'
+	plugins/weread.koplugin/weread/lib/thought_db.lua:186: in function 'putReviews'
+	...weread.koplugin/weread/ui/annotation_sync_controller.lua:867: in function <...weread.koplugin/weread/ui/annotation_sync_controller.lua:847>
+	[C]: in function 'xpcall'
+	plugins/weread.koplugin/weread/ui/common.lua:134: in function 'action'
+	frontend/ui/uimanager.lua:1019: in function '_checkTasks'
+	frontend/ui/uimanager.lua:1465: in function 'handleInput'
+	frontend/ui/uimanager.lua:1585: in function 'run'
+	./reader.lua:301: in main chunk
+	[C]: at 0x00013eb1 
+11/02/26-03:40:05 WARN  [WeRead] thought_db chapter write failed: chapter_uid= 1687 error= common/lua-ljsqlite3/init.lua:60: ljsqlite3[error] table review_items has no column named review_id
+stack traceback:
+	common/lua-ljsqlite3/init.lua:60: in function 'err'
+	common/lua-ljsqlite3/init.lua:235: in function 'E_conn'
+	common/lua-ljsqlite3/init.lua:241: in function 'T_okcode'
+	common/lua-ljsqlite3/init.lua:374: in function 'prepare'
+	plugins/weread.koplugin/weread/lib/thought_db.lua:147: in function 'insert_reviews'
+	plugins/weread.koplugin/weread/lib/thought_db.lua:196: in function <plugins/weread.koplugin/weread/lib/thought_db.lua:186>
+	[C]: in function 'pcall'
+	plugins/weread.koplugin/weread/lib/thought_db.lua:186: in function 'putReviews'
+	...weread.koplugin/weread/ui/annotation_sync_controller.lua:867: in function <...weread.koplugin/weread/ui/annotation_sync_controller.lua:847>
+	[C]: in function 'xpcall'
+	plugins/weread.koplugin/weread/ui/common.lua:134: in function 'action'
+	frontend/ui/uimanager.lua:1019: in function '_checkTasks'
+	frontend/ui/uimanager.lua:1465: in function 'handleInput'
+	frontend/ui/uimanager.lua:1585: in function 'run'
+	./reader.lua:301: in main chunk
+	[C]: at 0x00013eb1 
+11/02/26-03:40:06 WARN  [WeRead] thought_db chapter write failed: chapter_uid= 1688 error= common/lua-ljsqlite3/init.lua:60: ljsqlite3[error] table review_items has no column named review_id
+stack traceback:
+	common/lua-ljsqlite3/init.lua:60: in function 'err'
+	common/lua-ljsqlite3/init.lua:235: in function 'E_conn'
+	common/lua-ljsqlite3/init.lua:241: in function 'T_okcode'
+	common/lua-ljsqlite3/init.lua:374: in function 'prepare'
+	plugins/weread.koplugin/weread/lib/thought_db.lua:147: in function 'insert_reviews'
+	plugins/weread.koplugin/weread/lib/thought_db.lua:196: in function <plugins/weread.koplugin/weread/lib/thought_db.lua:186>
+	[C]: in function 'pcall'
+	plugins/weread.koplugin/weread/lib/thought_db.lua:186: in function 'putReviews'
+	...weread.koplugin/weread/ui/annotation_sync_controller.lua:867: in function <...weread.koplugin/weread/ui/annotation_sync_controller.lua:847>
+	[C]: in function 'xpcall'
+	plugins/weread.koplugin/weread/ui/common.lua:134: in function 'action'
+	frontend/ui/uimanager.lua:1019: in function '_checkTasks'
+	frontend/ui/uimanager.lua:1465: in function 'handleInput'
+	frontend/ui/uimanager.lua:1585: in function 'run'
+	./reader.lua:301: in main chunk
+	[C]: at 0x00013eb1 
+11/02/26-03:40:07 WARN  [WeRead] thought_db chapter write failed: chapter_uid= 1689 error= common/lua-ljsqlite3/init.lua:60: ljsqlite3[error] table review_items has no column named review_id
+stack traceback:
+	common/lua-ljsqlite3/init.lua:60: in function 'err'
+	common/lua-ljsqlite3/init.lua:235: in function 'E_conn'
+	common/lua-ljsqlite3/init.lua:241: in function 'T_okcode'
+	common/lua-ljsqlite3/init.lua:374: in function 'prepare'
+	plugins/weread.koplugin/weread/lib/thought_db.lua:147: in function 'insert_reviews'
+	plugins/weread.koplugin/weread/lib/thought_db.lua:196: in function <plugins/weread.koplugin/weread/lib/thought_db.lua:186>
+	[C]: in function 'pcall'
+	plugins/weread.koplugin/weread/lib/thought_db.lua:186: in function 'putReviews'
+	...weread.koplugin/weread/ui/annotation_sync_controller.lua:867: in function <...weread.koplugin/weread/ui/annotation_sync_controller.lua:847>
+	[C]: in function 'xpcall'
+	plugins/weread.koplugin/weread/ui/common.lua:134: in function 'action'
+	frontend/ui/uimanager.lua:1019: in function '_checkTasks'
+	frontend/ui/uimanager.lua:1465: in function 'handleInput'
+	frontend/ui/uimanager.lua:1585: in function 'run'
+	./reader.lua:301: in main chunk
+	[C]: at 0x00013eb1 
+11/02/26-03:40:08 WARN  [WeRead] thought_db chapter write failed: chapter_uid= 1690 error= common/lua-ljsqlite3/init.lua:60: ljsqlite3[error] table review_items has no column named review_id
+stack traceback:
+	common/lua-ljsqlite3/init.lua:60: in function 'err'
+	common/lua-ljsqlite3/init.lua:235: in function 'E_conn'
+	common/lua-ljsqlite3/init.lua:241: in function 'T_okcode'
+	common/lua-ljsqlite3/init.lua:374: in function 'prepare'
+	plugins/weread.koplugin/weread/lib/thought_db.lua:147: in function 'insert_reviews'
+	plugins/weread.koplugin/weread/lib/thought_db.lua:196: in function <plugins/weread.koplugin/weread/lib/thought_db.lua:186>
+	[C]: in function 'pcall'
+	plugins/weread.koplugin/weread/lib/thought_db.lua:186: in function 'putReviews'
+	...weread.koplugin/weread/ui/annotation_sync_controller.lua:867: in function <...weread.koplugin/weread/ui/annotation_sync_controller.lua:847>
+	[C]: in function 'xpcall'
+	plugins/weread.koplugin/weread/ui/common.lua:134: in function 'action'
+	frontend/ui/uimanager.lua:1019: in function '_checkTasks'
+	frontend/ui/uimanager.lua:1465: in function 'handleInput'
+	frontend/ui/uimanager.lua:1585: in function 'run'
+	./reader.lua:301: in main chunk
+	[C]: at 0x00013eb1 
+11/02/26-03:40:08 WARN  [WeRead] thought_db chapter write failed: chapter_uid= 1692 error= common/lua-ljsqlite3/init.lua:60: ljsqlite3[error] table review_items has no column named review_id
+stack traceback:
+	common/lua-ljsqlite3/init.lua:60: in function 'err'
+	common/lua-ljsqlite3/init.lua:235: in function 'E_conn'
+	common/lua-ljsqlite3/init.lua:241: in function 'T_okcode'
+	common/lua-ljsqlite3/init.lua:374: in function 'prepare'
+	plugins/weread.koplugin/weread/lib/thought_db.lua:147: in function 'insert_reviews'
+	plugins/weread.koplugin/weread/lib/thought_db.lua:196: in function <plugins/weread.koplugin/weread/lib/thought_db.lua:186>
+	[C]: in function 'pcall'
+	plugins/weread.koplugin/weread/lib/thought_db.lua:186: in function 'putReviews'
+	...weread.koplugin/weread/ui/annotation_sync_controller.lua:867: in function <...weread.koplugin/weread/ui/annotation_sync_controller.lua:847>
+	[C]: in function 'xpcall'
+	plugins/weread.koplugin/weread/ui/common.lua:134: in function 'action'
+	frontend/ui/uimanager.lua:1019: in function '_checkTasks'
+	frontend/ui/uimanager.lua:1465: in function 'handleInput'
+	frontend/ui/uimanager.lua:1585: in function 'run'
+	./reader.lua:301: in main chunk
+	[C]: at 0x00013eb1 
+11/02/26-03:40:09 WARN  [WeRead] thought_db chapter write failed: chapter_uid= 1694 error= common/lua-ljsqlite3/init.lua:60: ljsqlite3[error] table review_items has no column named review_id
+stack traceback:
+	common/lua-ljsqlite3/init.lua:60: in function 'err'
+	common/lua-ljsqlite3/init.lua:235: in function 'E_conn'
+	common/lua-ljsqlite3/init.lua:241: in function 'T_okcode'
+	common/lua-ljsqlite3/init.lua:374: in function 'prepare'
+	plugins/weread.koplugin/weread/lib/thought_db.lua:147: in function 'insert_reviews'
+	plugins/weread.koplugin/weread/lib/thought_db.lua:196: in function <plugins/weread.koplugin/weread/lib/thought_db.lua:186>
+	[C]: in function 'pcall'
+	plugins/weread.koplugin/weread/lib/thought_db.lua:186: in function 'putReviews'
+	...weread.koplugin/weread/ui/annotation_sync_controller.lua:867: in function <...weread.koplugin/weread/ui/annotation_sync_controller.lua:847>
+	[C]: in function 'xpcall'
+	plugins/weread.koplugin/weread/ui/common.lua:134: in function 'action'
+	frontend/ui/uimanager.lua:1019: in function '_checkTasks'
+	frontend/ui/uimanager.lua:1465: in function 'handleInput'
+	frontend/ui/uimanager.lua:1585: in function 'run'
+	./reader.lua:301: in main chunk
+	[C]: at 0x00013eb1 
+11/02/26-03:40:10 WARN  [WeRead] thought_db chapter write failed: chapter_uid= 1695 error= common/lua-ljsqlite3/init.lua:60: ljsqlite3[error] table review_items has no column named review_id
+stack traceback:
+	common/lua-ljsqlite3/init.lua:60: in function 'err'
+	common/lua-ljsqlite3/init.lua:235: in function 'E_conn'
+	common/lua-ljsqlite3/init.lua:241: in function 'T_okcode'
+	common/lua-ljsqlite3/init.lua:374: in function 'prepare'
+	plugins/weread.koplugin/weread/lib/thought_db.lua:147: in function 'insert_reviews'
+	plugins/weread.koplugin/weread/lib/thought_db.lua:196: in function <plugins/weread.koplugin/weread/lib/thought_db.lua:186>
+	[C]: in function 'pcall'
+	plugins/weread.koplugin/weread/lib/thought_db.lua:186: in function 'putReviews'
+	...weread.koplugin/weread/ui/annotation_sync_controller.lua:867: in function <...weread.koplugin/weread/ui/annotation_sync_controller.lua:847>
+	[C]: in function 'xpcall'
+	plugins/weread.koplugin/weread/ui/common.lua:134: in function 'action'
+	frontend/ui/uimanager.lua:1019: in function '_checkTasks'
+	frontend/ui/uimanager.lua:1465: in function 'handleInput'
+	frontend/ui/uimanager.lua:1585: in function 'run'
+	./reader.lua:301: in main chunk
+	[C]: at 0x00013eb1 
+11/02/26-03:40:10 WARN  [WeRead] thought_db chapter write failed: chapter_uid= 1696 error= common/lua-ljsqlite3/init.lua:60: ljsqlite3[error] table review_items has no column named review_id
+stack traceback:
+	common/lua-ljsqlite3/init.lua:60: in function 'err'
+	common/lua-ljsqlite3/init.lua:235: in function 'E_conn'
+	common/lua-ljsqlite3/init.lua:241: in function 'T_okcode'
+	common/lua-ljsqlite3/init.lua:374: in function 'prepare'
+	plugins/weread.koplugin/weread/lib/thought_db.lua:147: in function 'insert_reviews'
+	plugins/weread.koplugin/weread/lib/thought_db.lua:196: in function <plugins/weread.koplugin/weread/lib/thought_db.lua:186>
+	[C]: in function 'pcall'
+	plugins/weread.koplugin/weread/lib/thought_db.lua:186: in function 'putReviews'
+	...weread.koplugin/weread/ui/annotation_sync_controller.lua:867: in function <...weread.koplugin/weread/ui/annotation_sync_controller.lua:847>
+	[C]: in function 'xpcall'
+	plugins/weread.koplugin/weread/ui/common.lua:134: in function 'action'
+	frontend/ui/uimanager.lua:1019: in function '_checkTasks'
+	frontend/ui/uimanager.lua:1465: in function 'handleInput'
+	frontend/ui/uimanager.lua:1585: in function 'run'
+	./reader.lua:301: in main chunk
+	[C]: at 0x00013eb1 
+11/02/26-03:40:11 WARN  [WeRead] thought_db chapter write failed: chapter_uid= 1697 error= common/lua-ljsqlite3/init.lua:60: ljsqlite3[error] table review_items has no column named review_id
+stack traceback:
+	common/lua-ljsqlite3/init.lua:60: in function 'err'
+	common/lua-ljsqlite3/init.lua:235: in function 'E_conn'
+	common/lua-ljsqlite3/init.lua:241: in function 'T_okcode'
+	common/lua-ljsqlite3/init.lua:374: in function 'prepare'
+	plugins/weread.koplugin/weread/lib/thought_db.lua:147: in function 'insert_reviews'
+	plugins/weread.koplugin/weread/lib/thought_db.lua:196: in function <plugins/weread.koplugin/weread/lib/thought_db.lua:186>
+	[C]: in function 'pcall'
+	plugins/weread.koplugin/weread/lib/thought_db.lua:186: in function 'putReviews'
+	...weread.koplugin/weread/ui/annotation_sync_controller.lua:867: in function <...weread.koplugin/weread/ui/annotation_sync_controller.lua:847>
+	[C]: in function 'xpcall'
+	plugins/weread.koplugin/weread/ui/common.lua:134: in function 'action'
+	frontend/ui/uimanager.lua:1019: in function '_checkTasks'
+	frontend/ui/uimanager.lua:1465: in function 'handleInput'
+	frontend/ui/uimanager.lua:1585: in function 'run'
+	./reader.lua:301: in main chunk
+	[C]: at 0x00013eb1 
+---------------------------------------------
+                launching...
+  _  _____  ____                _
+ | |/ / _ \|  _ \ ___  __ _  __| | ___ _ __
+ | ' / | | | |_) / _ \/ _` |/ _` |/ _ \ '__|
+ | . \ |_| |  _ <  __/ (_| | (_| |  __/ |
+ |_|\_\___/|_| \_\___|\__,_|\__,_|\___|_|
+
+ It's a scroll... It's a codex... It's KOReader!
+
+ [*] Current time: 11/02/26-03:44:52
+has monolibtic? no (libs/libkoreader-monolibtic.so: cannot open shared object file: No such file or directory)
+lib_search_path: libs/?
+lib_basic_format: lib%s.so
+lib_version_format: lib%s.so.%s
+ [*] Version: v2026.07.1
+
+ffi.load: rt.so.1 (RTLD_GLOBAL)
+ffi.findlib: utf8proc [3]
+ffi.load: libs/libutf8proc.so.3
+ffi.findlib: blitbuffer
+ffi.load: libs/libblitbuffer.so
+ffi.findlib: sqlite3 [0]
+ffi.load: libs/libsqlite3.so.0
+ffi.findlib: fbink_input [1]
+ffi.load: libs/libfbink_input.so.1
+[FBInk] /dev/input/event0: `20cc000.snvs:snvs-powerkey` = KEY | POWER_BUTTON
+[FBInk] /dev/input/event1: `bd71827-power` = KEY | POWER_BUTTON
+[FBInk] /dev/input/event2: `goodix-ts` = TOUCHSCREEN
+[ko-input] Forked off fake event generator (pid: 11182)
+11/02/26-03:44:53 INFO  initializing for device KindlePaperWhite4 
+11/02/26-03:44:53 INFO  framebuffer resolution: {
+  h = 1448,
+  w = 1072
+} --[[table: 0x76bdfb88]] 
+[ko-input]: uevent listener ready for input device hotplug
+ffi.findlib: wrap-mupdf
+ffi.load: libs/libwrap-mupdf.so
+ffi.findlib: freetype [6]
+ffi.load: libs/libfreetype.so.6
+ffi.findlib: harfbuzz [0]
+ffi.load: libs/libharfbuzz.so.0
+ffi.findlib: zstd [1]
+ffi.load: libs/libzstd.so.1
+ffi.findlib: archive [13]
+ffi.load: libs/libarchive.so.13
+11/02/26-03:44:54 INFO  Looking for plugins in directory: plugins 
+ffi.findlib: leptonica [6]
+ffi.load: libs/libleptonica.so.6
+ffi.findlib: k2pdfopt [2]
+ffi.load: libs/libk2pdfopt.so.2
+CRE: font pmn caecilia lt regular: updated weight from 500 to 400
+CRE: font notosanskr bold: updated weight from 900 to 700
+CRE: font notoserifkr regular: updated weight from 500 to 400
+CRE: font notoserifkr bold: updated weight from 900 to 700
+11/02/26-03:44:57 INFO  [WeRead] thought popup emoji font: /mnt/us/koreader/plugins/weread.koplugin/fonts/NotoEmoji-Regular.ttf 
+11/02/26-03:44:57 INFO  [WeRead] initialized: version= 1.6.0-merged 
+11/02/26-03:44:57 INFO  zlibrary_credentials.lua is undefined. Using UI settings if available. 
+11/02/26-03:45:03 INFO  opening file /mnt/us/documents/玄鉴仙族 - 季越人.txt - 初入.epub 
+11/02/26-03:45:03 INFO  Inhibiting user input 
+11/02/26-03:45:03 INFO  [WeRead] initialized: version= 1.6.0-merged 
+11/02/26-03:45:03 INFO  zlibrary_credentials.lua is undefined. Using UI settings if available. 
+11/02/26-03:45:07 INFO  [WeRead] reader_open_perf stage= reader_ready_begin wall_ms= 0.0 session= 1 
+11/02/26-03:45:07 INFO  [WeRead] reader_open_perf stage= reader_setup wall_ms= 10.5 book_id= local 
+11/02/26-03:45:07 INFO  [WeRead] reader_open_perf stage= overlay_setup wall_ms= 18.9 
+11/02/26-03:45:07 INFO  [WeRead] reader_open_perf stage= annotations_begin wall_ms= 0.0 session= 1 
+11/02/26-03:45:07 INFO  [WeRead] reader_open_perf stage= context_begin wall_ms= 0.0 session= 1 
+11/02/26-03:45:07 INFO  [WeRead] reader_open_perf stage= annotation_binding wall_ms= 12.8 book_id= 45420986 
+11/02/26-03:45:07 INFO  [WeRead] reader_open_perf stage= annotation_catalog wall_ms= 207.8 chapters= 1681 
+11/02/26-03:45:08 INFO  [WeRead] reader_open_perf stage= chapter_mapping wall_ms= 920.6 chapters= 1681 
+11/02/26-03:45:08 INFO  [WeRead] reader_open_perf stage= document_identity wall_ms= 21.1 
+11/02/26-03:45:08 INFO  [WeRead] reader_open_perf stage= legacy_import wall_ms= 14.2 
+11/02/26-03:45:08 INFO  [WeRead] reader_open_perf stage= saved_annotation_status wall_ms= 13.2 
+11/02/26-03:45:08 INFO  [WeRead] reader_open_perf stage= context_total wall_ms= 1190.9 ok= true available= true 
+11/02/26-03:45:08 INFO  [WeRead] reader_open_perf stage= annotation_display_state wall_ms= 47.9 
+11/02/26-03:45:10 INFO  [WeRead] reader_open_perf stage= saved_annotation_overlay wall_ms= 1328.0 
+11/02/26-03:45:10 INFO  [WeRead] reader_open_perf stage= annotation_prefetch_disabled wall_ms= 1.1 
+11/02/26-03:45:10 INFO  [WeRead] reader_open_perf stage= annotations_ready wall_ms= 2598.3 
+11/02/26-03:45:10 INFO  [WeRead][ReadReport] reading time report started: reason= reader_ready book_id= CB_6k554r57tDNP77H75M9N92uR source= manual 
+11/02/26-03:45:10 INFO  [WeRead] reader_open_perf stage= reader_services wall_ms= 2.7 
+11/02/26-03:45:10 INFO  [WeRead] reader_open_perf stage= reader_ready_total wall_ms= 2601.9 
+11/02/26-03:45:11 INFO  Restoring user input handling 
+11/02/26-03:45:48 INFO  [WeRead][ReadReport] read report success: count= 1 has_synckey= true 
+11/02/26-03:45:58 INFO  [WeRead] reader_open_perf stage= context_begin wall_ms= 0.0 session= 1 
+11/02/26-03:45:58 INFO  [WeRead] reader_open_perf stage= annotation_binding wall_ms= 14.9 book_id= 45420986 
+11/02/26-03:45:58 INFO  [WeRead] reader_open_perf stage= context_cached wall_ms= 0.5 
+11/02/26-03:45:58 INFO  [WeRead] reader_open_perf stage= context_begin wall_ms= 0.0 session= 1 
+11/02/26-03:45:58 INFO  [WeRead] reader_open_perf stage= annotation_binding wall_ms= 13.2 book_id= 45420986 
+11/02/26-03:45:58 INFO  [WeRead] reader_open_perf stage= context_cached wall_ms= 0.6 
+11/02/26-03:46:37 INFO  [WeRead] thought_db opened /mnt/us/koreader/weread/books/45420986/thoughts.db 
+11/02/26-03:46:38 WARN  [WeRead] thought_db chapter write failed: chapter_uid= 1686 error= common/lua-ljsqlite3/init.lua:60: ljsqlite3[error] table review_items has no column named review_id
+stack traceback:
+	common/lua-ljsqlite3/init.lua:60: in function 'err'
+	common/lua-ljsqlite3/init.lua:235: in function 'E_conn'
+	common/lua-ljsqlite3/init.lua:241: in function 'T_okcode'
+	common/lua-ljsqlite3/init.lua:374: in function 'prepare'
+	plugins/weread.koplugin/weread/lib/thought_db.lua:147: in function 'insert_reviews'
+	plugins/weread.koplugin/weread/lib/thought_db.lua:196: in function <plugins/weread.koplugin/weread/lib/thought_db.lua:186>
+	[C]: in function 'pcall'
+	plugins/weread.koplugin/weread/lib/thought_db.lua:186: in function 'putReviews'
+	...weread.koplugin/weread/ui/annotation_sync_controller.lua:867: in function <...weread.koplugin/weread/ui/annotation_sync_controller.lua:847>
+	[C]: in function 'xpcall'
+	plugins/weread.koplugin/weread/ui/common.lua:134: in function 'action'
+	frontend/ui/uimanager.lua:1019: in function '_checkTasks'
+	frontend/ui/uimanager.lua:1465: in function 'handleInput'
+	frontend/ui/uimanager.lua:1585: in function 'run'
+	./reader.lua:301: in main chunk
+	[C]: at 0x00013eb1 
+---------------------------------------------
+                launching...
+  _  _____  ____                _
+ | |/ / _ \|  _ \ ___  __ _  __| | ___ _ __
+ | ' / | | | |_) / _ \/ _` |/ _` |/ _ \ '__|
+ | . \ |_| |  _ <  __/ (_| | (_| |  __/ |
+ |_|\_\___/|_| \_\___|\__,_|\__,_|\___|_|
+
+ It's a scroll... It's a codex... It's KOReader!
+
+ [*] Current time: 11/02/26-03:50:45
+has monolibtic? no (libs/libkoreader-monolibtic.so: cannot open shared object file: No such file or directory)
+lib_search_path: libs/?
+lib_basic_format: lib%s.so
+lib_version_format: lib%s.so.%s
+ [*] Version: v2026.07.1
+
+ffi.load: rt.so.1 (RTLD_GLOBAL)
+ffi.findlib: utf8proc [3]
+ffi.load: libs/libutf8proc.so.3
+ffi.findlib: blitbuffer
+ffi.load: libs/libblitbuffer.so
+ffi.findlib: sqlite3 [0]
+ffi.load: libs/libsqlite3.so.0
+ffi.findlib: fbink_input [1]
+ffi.load: libs/libfbink_input.so.1
+[FBInk] /dev/input/event0: `20cc000.snvs:snvs-powerkey` = KEY | POWER_BUTTON
+[FBInk] /dev/input/event1: `bd71827-power` = KEY | POWER_BUTTON
+[FBInk] /dev/input/event2: `goodix-ts` = TOUCHSCREEN
+[ko-input] Forked off fake event generator (pid: 8187)
+11/02/26-03:50:46 INFO  initializing for device KindlePaperWhite4 
+11/02/26-03:50:46 INFO  framebuffer resolution: {
+  h = 1448,
+  w = 1072
+} --[[table: 0x76b778c0]] 
+[ko-input]: uevent listener ready for input device hotplug
+ffi.findlib: wrap-mupdf
+ffi.load: libs/libwrap-mupdf.so
+ffi.findlib: freetype [6]
+ffi.load: libs/libfreetype.so.6
+ffi.findlib: harfbuzz [0]
+ffi.load: libs/libharfbuzz.so.0
+ffi.findlib: zstd [1]
+ffi.load: libs/libzstd.so.1
+ffi.findlib: archive [13]
+ffi.load: libs/libarchive.so.13
+11/02/26-03:50:47 INFO  Looking for plugins in directory: plugins 
+ffi.findlib: leptonica [6]
+ffi.load: libs/libleptonica.so.6
+ffi.findlib: k2pdfopt [2]
+ffi.load: libs/libk2pdfopt.so.2
+CRE: font pmn caecilia lt regular: updated weight from 500 to 400
+CRE: font notosanskr bold: updated weight from 900 to 700
+CRE: font notoserifkr regular: updated weight from 500 to 400
+CRE: font notoserifkr bold: updated weight from 900 to 700
+11/02/26-03:50:52 INFO  [WeRead] thought popup emoji font: /mnt/us/koreader/plugins/weread.koplugin/fonts/NotoEmoji-Regular.ttf 
+11/02/26-03:50:53 INFO  [WeRead] initialized: version= 1.6.0-merged 
+11/02/26-03:50:53 INFO  zlibrary_credentials.lua is undefined. Using UI settings if available. 
+11/02/26-03:50:57 INFO  opening file /mnt/us/documents/玄鉴仙族 - 季越人.txt - 初入.epub 
+11/02/26-03:50:57 INFO  Inhibiting user input 
+11/02/26-03:50:58 INFO  [WeRead] initialized: version= 1.6.0-merged 
+11/02/26-03:50:58 INFO  zlibrary_credentials.lua is undefined. Using UI settings if available. 
+11/02/26-03:51:03 INFO  [WeRead] reader_open_perf stage= reader_ready_begin wall_ms= 0.0 session= 1 
+11/02/26-03:51:03 INFO  [WeRead] reader_open_perf stage= reader_setup wall_ms= 11.5 book_id= local 
+11/02/26-03:51:03 INFO  [WeRead] reader_open_perf stage= overlay_setup wall_ms= 45.6 
+11/02/26-03:51:03 INFO  [WeRead] reader_open_perf stage= annotations_begin wall_ms= 0.0 session= 1 
+11/02/26-03:51:03 INFO  [WeRead] reader_open_perf stage= context_begin wall_ms= 0.0 session= 1 
+11/02/26-03:51:03 INFO  [WeRead] reader_open_perf stage= annotation_binding wall_ms= 18.7 book_id= 45420986 
+11/02/26-03:51:03 INFO  [WeRead] reader_open_perf stage= annotation_catalog wall_ms= 223.6 chapters= 1681 
+11/02/26-03:51:04 INFO  [WeRead] reader_open_perf stage= chapter_mapping wall_ms= 915.6 chapters= 1681 
+11/02/26-03:51:04 INFO  [WeRead] reader_open_perf stage= document_identity wall_ms= 21.9 
+11/02/26-03:51:04 INFO  [WeRead] reader_open_perf stage= legacy_import wall_ms= 13.2 
+11/02/26-03:51:04 INFO  [WeRead] reader_open_perf stage= saved_annotation_status wall_ms= 18.2 
+11/02/26-03:51:04 INFO  [WeRead] reader_open_perf stage= context_total wall_ms= 1213.6 ok= true available= true 
+11/02/26-03:51:04 INFO  [WeRead] reader_open_perf stage= annotation_display_state wall_ms= 47.5 
+11/02/26-03:51:06 INFO  [WeRead] reader_open_perf stage= saved_annotation_overlay wall_ms= 1342.5 
+11/02/26-03:51:06 INFO  [WeRead] reader_open_perf stage= annotation_prefetch_disabled wall_ms= 1.1 
+11/02/26-03:51:06 INFO  [WeRead] reader_open_perf stage= annotations_ready wall_ms= 2667.8 
+11/02/26-03:51:06 INFO  [WeRead][ReadReport] reading time report started: reason= reader_ready book_id= CB_6k554r57tDNP77H75M9N92uR source= manual 
+11/02/26-03:51:06 INFO  [WeRead] reader_open_perf stage= reader_services wall_ms= 3.9 
+11/02/26-03:51:06 INFO  [WeRead] reader_open_perf stage= reader_ready_total wall_ms= 2672.2 
+11/02/26-03:51:06 INFO  Restoring user input handling 
+11/02/26-03:51:16 INFO  [WeRead] reader_open_perf stage= context_begin wall_ms= 0.0 session= 1 
+11/02/26-03:51:16 INFO  [WeRead] reader_open_perf stage= annotation_binding wall_ms= 16.4 book_id= 45420986 
+11/02/26-03:51:16 INFO  [WeRead] reader_open_perf stage= context_cached wall_ms= 0.5 
+11/02/26-03:51:16 INFO  [WeRead] reader_open_perf stage= context_begin wall_ms= 0.0 session= 1 
+11/02/26-03:51:16 INFO  [WeRead] reader_open_perf stage= annotation_binding wall_ms= 15.3 book_id= 45420986 
+11/02/26-03:51:16 INFO  [WeRead] reader_open_perf stage= context_cached wall_ms= 0.5 
+ffi.findlib: lodepng
+ffi.load: libs/liblodepng.so
+11/02/26-03:51:42 INFO  [WeRead][ReadReport] read report success: count= 1 has_synckey= true 
+11/02/26-03:52:52 INFO  [WeRead][ReadReport] reading time report stopped: reason= document_closed success_count= 3 failure_count= 0 
+11/02/26-03:52:52 INFO  [WeRead] initialized: version= 1.6.0-merged 
+11/02/26-03:52:52 INFO  zlibrary_credentials.lua is undefined. Using UI settings if available. 
+11/02/26-03:56:44 INFO  opening file /mnt/us/koreader/crash.log 
+11/02/26-03:56:45 INFO  Inhibiting user input 
+11/02/26-03:56:45 INFO  [WeRead] initialized: version= 1.6.0-merged 
+11/02/26-03:56:45 INFO  zlibrary_credentials.lua is undefined. Using UI settings if available. 
+11/02/26-03:56:47 INFO  [WeRead] reader_open_perf stage= reader_ready_begin wall_ms= 0.0 session= 1 
+11/02/26-03:56:47 INFO  [WeRead] reader_open_perf stage= reader_setup wall_ms= 12.0 book_id= local 
+11/02/26-03:56:47 INFO  [WeRead] reader_open_perf stage= overlay_setup wall_ms= 4.8 
+11/02/26-03:56:47 INFO  [WeRead] reader_open_perf stage= annotations_begin wall_ms= 0.0 session= 1 
+11/02/26-03:56:47 INFO  [WeRead] reader_open_perf stage= context_begin wall_ms= 0.0 session= 1 
+11/02/26-03:56:47 INFO  [WeRead] reader_open_perf stage= annotation_binding wall_ms= 11.4 book_id= none 
+11/02/26-03:56:47 INFO  [WeRead] reader_open_perf stage= context_total wall_ms= 12.8 ok= true available= false 
+11/02/26-03:56:47 INFO  [WeRead] reader_open_perf stage= annotations_ready wall_ms= 30.5 
+11/02/26-03:56:47 INFO  [WeRead][ReadReport] reading time report started: reason= reader_ready book_id= CB_6k554r57tDNP77H75M9N92uR source= manual 
+11/02/26-03:56:47 INFO  [WeRead] reader_open_perf stage= reader_services wall_ms= 2.1 
+11/02/26-03:56:47 INFO  [WeRead] reader_open_perf stage= reader_ready_total wall_ms= 33.4 
+11/02/26-03:56:48 INFO  Restoring user input handling 
+11/02/26-03:57:22 INFO  [WeRead][ReadReport] read report success: count= 1 has_synckey= true 
+11/02/26-03:58:12 INFO  [WeRead][ReadReport] reading time report stopped: reason= suspend success_count= 2 failure_count= 0 
+11/02/26-03:58:12 INFO  Inhibiting user input 
+11/02/26-05:00:15 INFO  Kindle unscheduled wakeup 
+11/02/26-11:21:28 INFO  Restoring user input handling 
+11/02/26-11:21:28 INFO  [WeRead][ReadReport] reading time report started: reason= resume book_id= CB_6k554r57tDNP77H75M9N92uR source= manual 
